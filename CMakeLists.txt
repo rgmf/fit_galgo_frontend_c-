@@ -10,7 +10,7 @@ endif()
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 
-set(SOURCES src/main.cpp src/config/Context.cpp src/net/HttpClient.cpp src/net/HttpClientException.cpp)
+set(SOURCES src/main.cpp src/config/Context.cpp src/net/HttpClient.cpp src/net/HttpClientException.cpp src/api/fitgalgo.cpp)
 
 include_directories(include)
 

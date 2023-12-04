@@ -1,13 +1,5 @@
-#include <cstdlib>
-#include <memory>
-#include <optional>
-#include <sstream>
-#include <string>
-#include <filesystem>
-
 #include <rapidjson/document.h>
-#include <variant>
-#include "httplib/httplib.h"
+#include <httplib/httplib.h>
 
 #include "fitgalgo.h"
 
@@ -27,20 +19,27 @@ std::string fitgalgo::Error::errorToString() const
         {ErrorType::Http100, "Error: 1xx code error."},
         {ErrorType::Http300, "Error: 3xx code error."},
         {ErrorType::Http400, "Error: 4xx code error."},
+	{ErrorType::Http401, "Error: authentication error."},
         {ErrorType::Http500, "Error: 5xx code error."}
     };
 
+    std::string result;
+
     auto errorString = errorMessages.find(error);
     if (errorString != errorMessages.end()) {
-        return errorString->second;
+	result = errorString->second;
     }
 
     if (httplibError != httplib::Error::Success) {
-        return "Error: " + httplib::to_string(httplibError);
+	result += '\n';
+	result += httplib::to_string(httplibError);
     }
 
-    // Handle additional cases or fallback message if needed
-    return "Error: Unknown error.";
+    if (result.empty()) {
+	return "Error: Unknown error.";
+    }
+
+    return result;
     // const auto v = this->document.FindMember("detail");
     // if (v != this->document.MemberEnd() && v->value.IsString()) {
     // 	return "Error: " + std::string(v->value.GetString()) + ".";
@@ -143,7 +142,7 @@ bool fitgalgo::StepsData::load(rapidjson::Document& document)
     return true;
 }
 
-template <typename T>
+template<typename T>
 void fitgalgo::Result<T>::load(const httplib::Result &response)
 {   
     if (!response) {
@@ -163,7 +162,12 @@ void fitgalgo::Result<T>::load(const httplib::Result &response)
 	return;
     }
 
-    if (response->status >= 400 && response->status < 500) {
+    if (response->status == 401) {
+	this->error = fitgalgo::Error(fitgalgo::ErrorType::Http401, response.error());
+	return;
+    }
+
+    if (response->status > 401 && response->status < 500) {
 	this->error = fitgalgo::Error(fitgalgo::ErrorType::Http400, response.error());
 	return;
     }
@@ -182,8 +186,13 @@ void fitgalgo::Result<T>::load(const httplib::Result &response)
 	this->error = fitgalgo::Error(fitgalgo::ErrorType::Success, response.error());
     } else {
 	this->error = fitgalgo::Error(fitgalgo::ErrorType::NotData, response.error());
-	return;
-    }    
+    }
+}
+
+template<typename T>
+void fitgalgo::Result<T>::load(const T& newData)
+{
+    this->data = std::make_unique<T>(newData);
 }
 
 const fitgalgo::Result<fitgalgo::LoginData> fitgalgo::Connection::login(
@@ -211,16 +220,8 @@ void fitgalgo::Connection::logout() { this->token = ""; }
 
 bool fitgalgo::Connection::hasToken() const { return !this->token.empty(); }
 
-fitgalgo::Result<fitgalgo::UploadedFileData> fitgalgo::Connection::handlePostFileResponse(
-    const httplib::Result& response)
-{
-    fitgalgo::Result<fitgalgo::UploadedFileData> result;
-    result.load(response);
-    return result;
-}
-
-fitgalgo::Result<fitgalgo::UploadedFileData> fitgalgo::Connection::doPostForFile(
-    httplib::Client& client, const std::filesystem::path& path)
+const fitgalgo::Result<fitgalgo::UploadedFileData> fitgalgo::Connection::doPostForFile(
+    httplib::Client& client, const std::filesystem::path& path) const
 {
     try {
 	// Open and read the file in a buffer.
@@ -240,13 +241,20 @@ fitgalgo::Result<fitgalgo::UploadedFileData> fitgalgo::Connection::doPostForFile
 	result.load(response);
 	return result;
     } catch (const std::exception& e) {
-	fitgalgo::Result<fitgalgo::UploadedFileData> result{};
+	fitgalgo::UploadedFileData ufd;
+	ufd.filePath = path.string();
+	ufd.accepted = false;
+	ufd.errors = {e.what()};
+
+        fitgalgo::Result<fitgalgo::UploadedFileData> result;
+	result.load(ufd);
+
 	return result;
     }
 }
 
-std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> fitgalgo::Connection::postFile(
-    std::filesystem::path& path)
+const std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> fitgalgo::Connection::postFile(
+    std::filesystem::path& path) const
 {
     std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> results;
 

@@ -1,28 +1,12 @@
-#include <algorithm>
-#include <cstring>
 #include <iostream>
-#include <iterator>
-#include <limits>
-#include <map>
-#include <memory>
 #include <string>
-#include <fstream>
-#include <sstream>
-#include <filesystem>
-#include <chrono>
 
-#include <unistd.h>
 #include <termios.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 
 #include <rapidjson/document.h>
 #include <httplib/httplib.h>
 
 #include "api/fitgalgo.h"
-
-#define BUFFER_SIZE 1024
 
 /**
  * @return Message with information and help about programm usage.

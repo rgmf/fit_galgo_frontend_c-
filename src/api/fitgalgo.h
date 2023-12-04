@@ -1,12 +1,10 @@
 #ifndef _ES_RGMF_FITGALGO_H
 #define _ES_RGMF_FITGALGO_H 1
 
-#include <memory>
+#include <filesystem>
 #include <string>
 #include <map>
 #include <vector>
-#include <filesystem>
-#include <optional>
 
 #include "httplib/httplib.h"
 #include "rapidjson/document.h"
@@ -63,6 +61,7 @@ namespace fitgalgo
 	Http100,
 	Http300,
 	Http400,
+	Http401,
 	Http500
     };
 
@@ -89,16 +88,9 @@ namespace fitgalgo
 	int status{};
 	std::unique_ptr<T> data{};
 
-	std::optional<std::string> getStringMember(std::string) const;
-	std::optional<int> getIntMember(std::string) const;
-	std::optional<rapidjson::GenericArray<true, rapidjson::Value::ValueType>>
-	getArrayMember(std::string memberName) const;
-
     public:
-        // Result() : error(), status(), data(std::make_unique<T>()) {}
-	// Result(Error e, int s, std::unique_ptr<T> d)
-	//     : error(e), status(s), data(std::make_unique<T>(d)) {}
 	void load(const httplib::Result& response);
+	void load(const T& newData);
 	bool isValid() const { return !this->error.hasError(); }
 	const Error getError() const { return error; }
 	const T& getData() { return *this->data; }
@@ -117,18 +109,6 @@ namespace fitgalgo
 	std::string token{};
 
 	/**
-	 * Handles POST file response.
-	 *
-	 * @param response Response from httplib::Result library.
-	 * @param file_path String with the path of the file that tried to
-	 * upload.
-	 *
-	 * @return fitgalgo::Result.
-	 */
-	fitgalgo::Result<fitgalgo::UploadedFileData> handlePostFileResponse(
-	    const httplib::Result& response);
-
-	/**
 	 * Does POST for file path passed as parameter.
 	 *
 	 * @param httplib::Client Client object reference to do the POST.
@@ -137,8 +117,8 @@ namespace fitgalgo
 	 *
 	 * @return fitgalgo::Result.
 	 */
-	fitgalgo::Result<fitgalgo::UploadedFileData> doPostForFile(
-	    httplib::Client& client, const std::filesystem::path& file_path);
+	const fitgalgo::Result<fitgalgo::UploadedFileData> doPostForFile(
+	    httplib::Client& client, const std::filesystem::path& file_path) const;
 
     public:
 	/**
@@ -171,9 +151,8 @@ namespace fitgalgo
 	/**
 	 * Does POST for uploading FIT files.
 	 */
-	//std::vector<UploadedFile> postFile(std::filesystem::path& path) const;
-	std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> postFile(
-	    std::filesystem::path& path);
+	const std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> postFile(
+	    std::filesystem::path& path) const;
 
 	/**
 	 * Does GET for getting steps information.

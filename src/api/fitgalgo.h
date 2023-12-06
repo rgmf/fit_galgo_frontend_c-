@@ -11,27 +11,30 @@
 
 namespace fitgalgo
 {
-    class Data {
+    class Data
+    {
     public:
 	virtual ~Data() = default;
 	virtual bool load(rapidjson::Document& document) = 0;
     };
 
-    class LoginData : public Data {
+    class LoginData : public Data
+    {
     public:
-	std::string accessToken;
-	std::string tokenType;
+	std::string access_token;
+	std::string token_type;
 
 	bool load(rapidjson::Document& document) override;
     };
 
-    class UploadedFileData : public Data {
+    class UploadedFileData : public Data
+    {
     public:
 	std::string id;
-	std::string filePath;
+	std::string file_path;
 	bool accepted;
 	std::vector<std::string> errors;
-	std::string zipFilePath;
+	std::string zip_file_path;
 
 	bool load(rapidjson::Document& document) override;
     };
@@ -45,7 +48,8 @@ namespace fitgalgo
 	int calories;
     };
 
-    class StepsData : public Data {
+    class StepsData : public Data
+    {
     public:
 	std::map<std::string, fitgalgo::Steps> steps{};
 	std::vector<std::string> errors{};
@@ -84,7 +88,8 @@ namespace fitgalgo
 	std::vector<std::string> dates;
     };
 
-    class SleepData : public Data {
+    class SleepData : public Data
+    {
     public:
 	std::map<std::string, fitgalgo::Sleep> sleep{};
 	std::vector<std::string> errors{};
@@ -108,15 +113,15 @@ namespace fitgalgo
     {
     private:
 	ErrorType error = ErrorType::NotLoaded;
-	httplib::Error httplibError = httplib::Error::Success;
+	httplib::Error httplib_error = httplib::Error::Success;
 
     public:
 	Error() {}
-	Error(const ErrorType error, const httplib::Error httplibError = httplib::Error::Success)
-	    : error(error), httplibError(httplibError) {}
+	Error(const ErrorType error, const httplib::Error httplib_error = httplib::Error::Success)
+	    : error(error), httplib_error(httplib_error) {}
 
-	bool hasError() const;
-	std::string errorToString() const;
+	bool has_error() const;
+	std::string error_to_string() const;
     };
 
     template <typename T>
@@ -130,9 +135,9 @@ namespace fitgalgo
     public:
 	void load(const httplib::Result& response);
 	void load(const T& newData);
-	bool isValid() const { return !this->error.hasError(); }
-	const Error getError() const { return error; }
-	const T& getData() { return *this->data; }
+	bool is_valid() const { return !this->error.has_error(); }
+	const Error get_error() const { return error; }
+	const T& get_data() { return *this->data; }
     };
 
     /**
@@ -147,7 +152,7 @@ namespace fitgalgo
 	int port;
 	std::string token{};
 
-	const fitgalgo::Result<fitgalgo::UploadedFileData> doPostForFile(
+	const fitgalgo::Result<fitgalgo::UploadedFileData> do_post_for_file(
 	    httplib::Client& client, const std::filesystem::path& file_path) const;
 
     public:
@@ -156,11 +161,11 @@ namespace fitgalgo
 	const fitgalgo::Result<fitgalgo::LoginData> login(
 	    const std::string& username, const std::string& password);
 	void logout();
-	bool hasToken() const;
-	const std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> postFile(
+	bool has_token() const;
+	const std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> post_file(
 	    std::filesystem::path& path) const;
-	const fitgalgo::Result<fitgalgo::StepsData> getSteps() const;
-	const fitgalgo::Result<fitgalgo::SleepData> getSleep() const;
+	const fitgalgo::Result<fitgalgo::StepsData> get_steps() const;
+	const fitgalgo::Result<fitgalgo::SleepData> get_sleep() const;
     };
 }
 

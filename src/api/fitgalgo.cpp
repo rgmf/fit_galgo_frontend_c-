@@ -3,12 +3,12 @@
 
 #include "fitgalgo.h"
 
-bool fitgalgo::Error::hasError() const
+bool fitgalgo::Error::has_error() const
 {
-    return this->error != ErrorType::Success || this->httplibError != httplib::Error::Success;
+    return this->error != ErrorType::Success || this->httplib_error != httplib::Error::Success;
 }
 
-std::string fitgalgo::Error::errorToString() const
+std::string fitgalgo::Error::error_to_string() const
 {
     static const std::map<ErrorType, std::string> errorMessages = {
         {ErrorType::Success, "Success response."},
@@ -26,16 +26,19 @@ std::string fitgalgo::Error::errorToString() const
     std::string result;
 
     auto errorString = errorMessages.find(error);
-    if (errorString != errorMessages.end()) {
+    if (errorString != errorMessages.end())
+    {
 	result = errorString->second;
     }
 
-    if (httplibError != httplib::Error::Success) {
+    if (httplib_error != httplib::Error::Success)
+    {
 	result += '\n';
-	result += httplib::to_string(httplibError);
+	result += httplib::to_string(httplib_error);
     }
 
-    if (result.empty()) {
+    if (result.empty())
+    {
 	return "Error: Unknown error.";
     }
 
@@ -50,15 +53,17 @@ std::string fitgalgo::Error::errorToString() const
 
 bool fitgalgo::LoginData::load(rapidjson::Document& document)
 {
-    const auto accessTokenMember = document.FindMember("access_token");
-    if (accessTokenMember == document.MemberEnd() || !accessTokenMember->value.IsString()) {
+    const auto at_member = document.FindMember("access_token");
+    if (at_member == document.MemberEnd() || !at_member->value.IsString())
+    {
 	return false;
     }
-    this->accessToken = accessTokenMember->value.GetString();
+    this->access_token = at_member->value.GetString();
 
     const auto v = document.FindMember("token_type");
-    if (v != document.MemberEnd() && v->value.IsString()) {
-	this->tokenType = v->value.GetString();
+    if (v != document.MemberEnd() && v->value.IsString())
+    {
+	this->token_type = v->value.GetString();
     }
 
     return true;
@@ -67,32 +72,44 @@ bool fitgalgo::LoginData::load(rapidjson::Document& document)
 bool fitgalgo::UploadedFileData::load(rapidjson::Document& document)
 {
     const auto data = document.FindMember("data");
-    if (data == document.MemberEnd() || !data->value.IsArray()) {
+    if (data == document.MemberEnd() || !data->value.IsArray())
+    {
 	return false;
     }
 
     const auto itr = data->value.GetArray().Begin();
     const auto id = itr->FindMember("id");
-    const auto filePath = itr->FindMember("file_path");
+    const auto file_path = itr->FindMember("file_path");
     const auto accepted = itr->FindMember("accepted");
     const auto zip_file_path = itr->FindMember("zip_file_path");
     const auto errors = itr->FindMember("errors");
 
-    if (id != itr->MemberEnd() && id->value.IsString()) {
+    if (id != itr->MemberEnd() && id->value.IsString())
+    {
 	this->id = id->value.GetString();
     }
-    if (filePath != itr->MemberEnd() && filePath->value.IsString()) {
-	this->filePath = filePath->value.GetString();
+
+    if (file_path != itr->MemberEnd() && file_path->value.IsString())
+    {
+	this->file_path = file_path->value.GetString();
     }
-    if (accepted != itr->MemberEnd() && accepted->value.IsBool()) {
+
+    if (accepted != itr->MemberEnd() && accepted->value.IsBool())
+    {
 	this->accepted = accepted->value.GetBool();
     }
-    if (zip_file_path != itr->MemberEnd() && zip_file_path->value.IsString()) {
-	this->zipFilePath = zip_file_path->value.GetString();
+
+    if (zip_file_path != itr->MemberEnd() && zip_file_path->value.IsString())
+    {
+	this->zip_file_path = zip_file_path->value.GetString();
     }
-    if (errors != itr->MemberEnd() && errors->value.IsArray()) {
-	for (const auto& v : errors->value.GetArray()) {
-	    if (v.IsString()) {
+
+    if (errors != itr->MemberEnd() && errors->value.IsArray())
+    {
+	for (const auto& v : errors->value.GetArray())
+	{
+	    if (v.IsString())
+	    {
 		this->errors.emplace_back(v.GetString());
 	    }
 	}
@@ -104,12 +121,15 @@ bool fitgalgo::UploadedFileData::load(rapidjson::Document& document)
 bool fitgalgo::StepsData::load(rapidjson::Document& document)
 {
     const auto data = document.FindMember("data");
-    if (data == document.MemberEnd() || !data->value.IsArray()) {
+    if (data == document.MemberEnd() || !data->value.IsArray())
+    {
 	return false;
     }
 
-    for (const auto& v : data->value.GetArray()) {
-	if (v.IsObject() && v.HasMember("datetime_local")) {
+    for (const auto& v : data->value.GetArray())
+    {
+	if (v.IsObject() && v.HasMember("datetime_local"))
+	{
 	    auto itr_dt_utc = v.FindMember("datetime_utc");
 	    auto itr_dt_local = v.FindMember("datetime_local");
 	    auto itr_steps = v.FindMember("total_steps");
@@ -119,21 +139,23 @@ bool fitgalgo::StepsData::load(rapidjson::Document& document)
 	    struct fitgalgo::Steps item{};
 
 	    item.datetime_local = itr_dt_local->value.GetString();
-	    if (itr_dt_utc != v.MemberEnd() && itr_dt_utc->value.IsString()) {
+
+	    if (itr_dt_utc != v.MemberEnd() && itr_dt_utc->value.IsString())
 		item.datetime_utc = itr_dt_utc->value.GetString();
-	    }
-	    if (itr_steps != v.MemberEnd() && itr_steps->value.IsInt()) {
+
+	    if (itr_steps != v.MemberEnd() && itr_steps->value.IsInt())
 		item.steps = itr_steps->value.GetInt();
-	    }
-	    if (itr_distance != v.MemberEnd() && itr_distance->value.IsFloat()) {
+
+            if (itr_distance != v.MemberEnd() && itr_distance->value.IsFloat())
 		item.distance = itr_distance->value.GetFloat();
-	    }
-	    if (itr_calories != v.MemberEnd() && itr_calories->value.IsInt()) {
+
+	    if (itr_calories != v.MemberEnd() && itr_calories->value.IsInt())
 		item.calories = itr_calories->value.GetInt();
-	    }
 		
 	    this->steps[item.datetime_local.substr(0, 10)] = item;
-	} else {
+	}
+	else
+	{
 	    this->errors.emplace_back(
 		"JSON error: a datetime_local item is not an object or not exists.");
 	}
@@ -145,12 +167,15 @@ bool fitgalgo::StepsData::load(rapidjson::Document& document)
 bool fitgalgo::SleepData::load(rapidjson::Document& document)
 {
     const auto data = document.FindMember("data");
-    if (data == document.MemberEnd() || !data->value.IsArray()) {
+    if (data == document.MemberEnd() || !data->value.IsArray())
+    {
 	return false;
     }
 
-    for (const auto& v : data->value.GetArray()) {
-	if (v.IsObject()) {
+    for (const auto& v : data->value.GetArray())
+    {
+	if (v.IsObject())
+	{
 	    auto itrZoneInfo = v.FindMember("zone_info");
 	    auto itrAssessment = v.FindMember("assessment");
 	    auto itrLevels = v.FindMember("levels");
@@ -158,10 +183,13 @@ bool fitgalgo::SleepData::load(rapidjson::Document& document)
 
 	    struct fitgalgo::Sleep sleepItem{};
 
-	    if (itrZoneInfo != v.MemberEnd() && itrZoneInfo->value.IsString()) {
+	    if (itrZoneInfo != v.MemberEnd() && itrZoneInfo->value.IsString())
+	    {
 		sleepItem.zone_info = itrZoneInfo->value.GetString();
 	    }
-	    if (itrAssessment != v.MemberEnd() && itrAssessment->value.IsObject()) {
+
+	    if (itrAssessment != v.MemberEnd() && itrAssessment->value.IsObject())
+	    {
 		auto itr_cas = itrAssessment->value.FindMember("combined_awake_score");
 		auto itr_ats = itrAssessment->value.FindMember("awake_time_score");
 		auto itr_acs = itrAssessment->value.FindMember("awakenings_count_score");
@@ -179,66 +207,68 @@ bool fitgalgo::SleepData::load(rapidjson::Document& document)
 
 		struct fitgalgo::SleepAssessment assessment{};
 
-		if (itr_cas != itrAssessment->value.MemberEnd() && itr_cas->value.IsInt()) {
+		if (itr_cas != itrAssessment->value.MemberEnd() && itr_cas->value.IsInt())
 		    assessment.combined_awake_score = itr_cas->value.GetInt();
-		}
-		if (itr_ats != itrAssessment->value.MemberEnd() && itr_ats->value.IsInt()) {
+
+		if (itr_ats != itrAssessment->value.MemberEnd() && itr_ats->value.IsInt())
 		    assessment.awake_time_score = itr_ats->value.GetInt();
-		}
-		if (itr_acs != itrAssessment->value.MemberEnd() && itr_acs->value.IsInt()) {
+
+		if (itr_acs != itrAssessment->value.MemberEnd() && itr_acs->value.IsInt())
 		    assessment.awakenings_count_score = itr_acs->value.GetInt();
-		}
-		if (itr_dss != itrAssessment->value.MemberEnd() && itr_dss->value.IsInt()) {
+
+		if (itr_dss != itrAssessment->value.MemberEnd() && itr_dss->value.IsInt())
 		    assessment.deep_sleep_score = itr_dss->value.GetInt();
-		}
-		if (itr_sds != itrAssessment->value.MemberEnd() && itr_sds->value.IsInt()) {
+
+		if (itr_sds != itrAssessment->value.MemberEnd() && itr_sds->value.IsInt())
 		    assessment.sleep_duration_score = itr_sds->value.GetInt();
-		}
-		if (itr_lss != itrAssessment->value.MemberEnd() && itr_lss->value.IsInt()) {
+
+		if (itr_lss != itrAssessment->value.MemberEnd() && itr_lss->value.IsInt())
 		    assessment.light_sleep_score = itr_lss->value.GetInt();
-		}
-		if (itr_oss != itrAssessment->value.MemberEnd() && itr_oss->value.IsInt()) {
+
+		if (itr_oss != itrAssessment->value.MemberEnd() && itr_oss->value.IsInt())
 		    assessment.overall_sleep_score = itr_oss->value.GetInt();
-		}
-		if (itr_sqs != itrAssessment->value.MemberEnd() && itr_sqs->value.IsInt()) {
+
+		if (itr_sqs != itrAssessment->value.MemberEnd() && itr_sqs->value.IsInt())
 		    assessment.sleep_quality_score = itr_sqs->value.GetInt();
-		}
-		if (itr_srs != itrAssessment->value.MemberEnd() && itr_srs->value.IsInt()) {
+		
+		if (itr_srs != itrAssessment->value.MemberEnd() && itr_srs->value.IsInt())
 		    assessment.sleep_recovery_score = itr_srs->value.GetInt();
-		}
-		if (itr_rss != itrAssessment->value.MemberEnd() && itr_rss->value.IsInt()) {
+
+		if (itr_rss != itrAssessment->value.MemberEnd() && itr_rss->value.IsInt())
 		    assessment.rem_sleep_score = itr_rss->value.GetInt();
-		}
-		if (itr_sres != itrAssessment->value.MemberEnd() && itr_sres->value.IsInt()) {
+
+		if (itr_sres != itrAssessment->value.MemberEnd() && itr_sres->value.IsInt())
 		    assessment.sleep_restlessness_score = itr_sres->value.GetInt();
-		}
-		if (itr_ac != itrAssessment->value.MemberEnd() && itr_ac->value.IsInt()) {
+
+		if (itr_ac != itrAssessment->value.MemberEnd() && itr_ac->value.IsInt())
 		    assessment.awakenings_count = itr_ac->value.GetInt();
-		}
-		if (itr_is != itrAssessment->value.MemberEnd() && itr_is->value.IsInt()) {
+
+		if (itr_is != itrAssessment->value.MemberEnd() && itr_is->value.IsInt())
 		    assessment.interruptions_score = itr_is->value.GetInt();
-		}
-		if (itr_asds != itrAssessment->value.MemberEnd() && itr_asds->value.IsFloat()) {
+
+		if (itr_asds != itrAssessment->value.MemberEnd() && itr_asds->value.IsFloat())
 		    assessment.average_stress_during_sleep = itr_asds->value.GetFloat();
-		}
 
 		sleepItem.assessment = assessment;
 	    }
-	    if (itrLevels != v.MemberEnd() && itrLevels->value.IsArray()) {
+
+	    if (itrLevels != v.MemberEnd() && itrLevels->value.IsArray())
+	    {
 		std::vector<fitgalgo::SleepLevel> levels{};
-		for (const auto& l : itrLevels->value.GetArray()) {
-		    if (l.IsObject()) {
+		for (const auto& l : itrLevels->value.GetArray())
+		{
+		    if (l.IsObject())
+		    {
 			auto itr_dt_utc = l.FindMember("datetime_utc");
 			auto itr_level = l.FindMember("level");
 
 			fitgalgo::SleepLevel level{};
 
-			if (itr_dt_utc != l.MemberEnd() && itr_dt_utc->value.IsString()) {
+			if (itr_dt_utc != l.MemberEnd() && itr_dt_utc->value.IsString())
 			    level.datetime_utc = itr_dt_utc->value.GetString();
-			}
-			if (itr_level != l.MemberEnd() && itr_level->value.IsString()) {
+
+			if (itr_level != l.MemberEnd() && itr_level->value.IsString())
 			    level.level = itr_level->value.GetString();
-			}
 
 			levels.emplace_back(level);
 		    }
@@ -248,25 +278,28 @@ bool fitgalgo::SleepData::load(rapidjson::Document& document)
 	    }
 
 	    std::string idxDates{};
-	    if (itrDates != v.MemberEnd() && itrDates->value.IsArray()) {
+	    if (itrDates != v.MemberEnd() && itrDates->value.IsArray())
+	    {
 		std::vector<std::string> dates{};
-		for (const auto& d : itrDates->value.GetArray()) {
-		    if (d.IsString()) {
+		for (const auto& d : itrDates->value.GetArray())
+		{
+		    if (d.IsString())
+		    {
 			sleepItem.dates.emplace_back(d.GetString());
 			idxDates += d.GetString();
 		    }
 		}
 	    }
 
-	    if (!idxDates.empty()) {
+	    if (!idxDates.empty())
 		this->sleep[idxDates] = sleepItem;
-	    } else {
+	    else
 		this->errors.emplace_back("JSON error: dates are needed.");
-	    }
-	} else {
+	}
+	else
+	{
 	    this->errors.emplace_back(
 		"JSON error: it expects an object with sleep information.");
-
 	}
     }
 
@@ -276,34 +309,40 @@ bool fitgalgo::SleepData::load(rapidjson::Document& document)
 template <typename T>
 void fitgalgo::Result<T>::load(const httplib::Result &response)
 {   
-    if (!response) {
+    if (!response)
+    {
 	this->error = fitgalgo::Error(fitgalgo::ErrorType::NotResponse);
 	return;
     }
 
     this->status = response->status;
 
-    if (response->status < 200) {
+    if (response->status < 200)
+    {
 	this->error = fitgalgo::Error(fitgalgo::ErrorType::Http100, response.error());
 	return;
     }
 
-    if (response->status >= 300 && response->status < 400) {
+    if (response->status >= 300 && response->status < 400)
+    {
 	this->error = fitgalgo::Error(fitgalgo::ErrorType::Http300, response.error());
 	return;
     }
 
-    if (response->status == 401) {
+    if (response->status == 401)
+    {
 	this->error = fitgalgo::Error(fitgalgo::ErrorType::Http401, response.error());
 	return;
     }
 
-    if (response->status > 401 && response->status < 500) {
+    if (response->status > 401 && response->status < 500)
+    {
 	this->error = fitgalgo::Error(fitgalgo::ErrorType::Http400, response.error());
 	return;
     }
 
-    if (response->status >= 500) {
+    if (response->status >= 500)
+    {
 	this->error = fitgalgo::Error(fitgalgo::ErrorType::Http500, response.error());
 	return;
     }
@@ -311,13 +350,12 @@ void fitgalgo::Result<T>::load(const httplib::Result &response)
     rapidjson::Document document;
     document.Parse(response->body.c_str());
     this->data = std::make_unique<T>();
-    bool isValid = this->data->load(document);
+    bool is_valid = this->data->load(document);
 
-    if (isValid) {
+    if (is_valid)
 	this->error = fitgalgo::Error(fitgalgo::ErrorType::Success, response.error());
-    } else {
+    else
 	this->error = fitgalgo::Error(fitgalgo::ErrorType::NotData, response.error());
-    }
 }
 
 template <typename T>
@@ -340,21 +378,21 @@ const fitgalgo::Result<fitgalgo::LoginData> fitgalgo::Connection::login(
     fitgalgo::Result<fitgalgo::LoginData> result;
     result.load(response);
 
-    if (result.isValid()) {
-	this->token = result.getData().accessToken;
-    }
+    if (result.is_valid())
+	this->token = result.get_data().access_token;
 
     return result;
 }
 
 void fitgalgo::Connection::logout() { this->token = ""; }
 
-bool fitgalgo::Connection::hasToken() const { return !this->token.empty(); }
+bool fitgalgo::Connection::has_token() const { return !this->token.empty(); }
 
-const fitgalgo::Result<fitgalgo::UploadedFileData> fitgalgo::Connection::doPostForFile(
+const fitgalgo::Result<fitgalgo::UploadedFileData> fitgalgo::Connection::do_post_for_file(
     httplib::Client& client, const std::filesystem::path& path) const
 {
-    try {
+    try
+    {
 	// Open and read the file in a buffer.
 	std::ifstream file(path.string(), std::ios::binary);
 	std::stringstream buffer;
@@ -371,9 +409,11 @@ const fitgalgo::Result<fitgalgo::UploadedFileData> fitgalgo::Connection::doPostF
 	fitgalgo::Result<fitgalgo::UploadedFileData> result;
 	result.load(response);
 	return result;
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e)
+    {
 	fitgalgo::UploadedFileData ufd;
-	ufd.filePath = path.string();
+	ufd.file_path = path.string();
 	ufd.accepted = false;
 	ufd.errors = {e.what()};
 
@@ -384,7 +424,7 @@ const fitgalgo::Result<fitgalgo::UploadedFileData> fitgalgo::Connection::doPostF
     }
 }
 
-const std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> fitgalgo::Connection::postFile(
+const std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> fitgalgo::Connection::post_file(
     std::filesystem::path& path) const
 {
     std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> results;
@@ -395,13 +435,17 @@ const std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> fitgalgo::Connec
     client.set_read_timeout(10, 0); // 10 seconds
     client.set_write_timeout(10, 0); // 10 seconds
 
-    if (std::filesystem::is_regular_file(path)) {
-	auto result = this->doPostForFile(client, path);
+    if (std::filesystem::is_regular_file(path))
+    {
+	auto result = this->do_post_for_file(client, path);
 	results.emplace_back(std::move(result));
-    } else if (std::filesystem::is_directory(path)) {
-	for (const auto& e : std::filesystem::directory_iterator(path)) {
+    }
+    else if (std::filesystem::is_directory(path))
+    {
+	for (const auto& e : std::filesystem::directory_iterator(path))
+	{
 	    auto p = e.path();
-	    auto result = this->doPostForFile(client, p);
+	    auto result = this->do_post_for_file(client, p);
 	    results.emplace_back(std::move(result));
 	}
     }
@@ -409,7 +453,7 @@ const std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> fitgalgo::Connec
     return results;
 }
 
-const fitgalgo::Result<fitgalgo::StepsData> fitgalgo::Connection::getSteps() const
+const fitgalgo::Result<fitgalgo::StepsData> fitgalgo::Connection::get_steps() const
 {
     httplib::Client client(this->host, this->port);
     client.set_bearer_token_auth(this->token);
@@ -420,7 +464,7 @@ const fitgalgo::Result<fitgalgo::StepsData> fitgalgo::Connection::getSteps() con
     return result;
 }
 
-const fitgalgo::Result<fitgalgo::SleepData> fitgalgo::Connection::getSleep() const
+const fitgalgo::Result<fitgalgo::SleepData> fitgalgo::Connection::get_sleep() const
 {
     httplib::Client client(this->host, this->port);
     client.set_bearer_token_auth(this->token);

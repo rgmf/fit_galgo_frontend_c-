@@ -52,6 +52,45 @@ namespace fitgalgo
 	bool load(rapidjson::Document& document) override;
     };
 
+    struct SleepAssessment
+    {
+	int combined_awake_score;
+        int awake_time_score;
+        int awakenings_count_score;
+        int deep_sleep_score;
+        int sleep_duration_score;
+        int light_sleep_score;
+        int overall_sleep_score;
+        int sleep_quality_score;
+        int sleep_recovery_score;
+        int rem_sleep_score;
+        int sleep_restlessness_score;
+        int awakenings_count;
+        int interruptions_score;
+        float average_stress_during_sleep;
+    };
+
+    struct SleepLevel
+    {
+	std::string datetime_utc;
+	std::string level;
+    };
+
+    struct Sleep
+    {
+	std::string zone_info;
+	fitgalgo::SleepAssessment assessment;
+	std::vector<fitgalgo::SleepLevel> levels;
+	std::vector<std::string> dates;
+    };
+
+    class SleepData : public Data {
+    public:
+	std::map<std::string, fitgalgo::Sleep> sleep{};
+	std::vector<std::string> errors{};
+	bool load(rapidjson::Document& document) override;
+    };
+
     enum class ErrorType {
 	Success = 0,
 	NotLoaded,
@@ -80,7 +119,7 @@ namespace fitgalgo
 	std::string errorToString() const;
     };
 
-    template<typename T>
+    template <typename T>
     class Result
     {
     private:
@@ -108,62 +147,20 @@ namespace fitgalgo
 	int port;
 	std::string token{};
 
-	/**
-	 * Does POST for file path passed as parameter.
-	 *
-	 * @param httplib::Client Client object reference to do the POST.
-	 * @param std::filesystem::path Path object, the file that will be
-	 * posted (uploaded).
-	 *
-	 * @return fitgalgo::Result.
-	 */
 	const fitgalgo::Result<fitgalgo::UploadedFileData> doPostForFile(
 	    httplib::Client& client, const std::filesystem::path& file_path) const;
 
     public:
-	/**
-	 * Default constructor.
-	 */
 	Connection(const std::string host, const int port)
 	    : host(host), port(port) {}
-	
-	/**
-	 * Log FitGalgo API in.
-	 *
-	 * @param username Username for login.
-	 * @param password User's password for login.
-	 *
-	 * @return bool True if login was okay; false otherwise.
-	 */
 	const fitgalgo::Result<fitgalgo::LoginData> login(
 	    const std::string& username, const std::string& password);
-
-	/**
-	 * Clean login information.
-	 */
 	void logout();
-
-	/**
-	 * @return bool True if there is token; false otherwise.
-	 */
 	bool hasToken() const;
-
-	/**
-	 * Does POST for uploading FIT files.
-	 */
 	const std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> postFile(
 	    std::filesystem::path& path) const;
-
-	/**
-	 * Does GET for getting steps information.
-	 *
-	 * @throws std::runtime_error If an HTTP or JSON error occurs during the
-	 * request.
-	 *
-	 * @return std::map<std::string, Steps> A map with local datetime as key
-	 * and Steps struct as value.
-	 */
 	const fitgalgo::Result<fitgalgo::StepsData> getSteps() const;
+	const fitgalgo::Result<fitgalgo::SleepData> getSleep() const;
     };
 }
 

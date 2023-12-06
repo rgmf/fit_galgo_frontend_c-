@@ -142,7 +142,138 @@ bool fitgalgo::StepsData::load(rapidjson::Document& document)
     return true;
 }
 
-template<typename T>
+bool fitgalgo::SleepData::load(rapidjson::Document& document)
+{
+    const auto data = document.FindMember("data");
+    if (data == document.MemberEnd() || !data->value.IsArray()) {
+	return false;
+    }
+
+    for (const auto& v : data->value.GetArray()) {
+	if (v.IsObject()) {
+	    auto itrZoneInfo = v.FindMember("zone_info");
+	    auto itrAssessment = v.FindMember("assessment");
+	    auto itrLevels = v.FindMember("levels");
+	    auto itrDates = v.FindMember("dates");
+
+	    struct fitgalgo::Sleep sleepItem{};
+
+	    if (itrZoneInfo != v.MemberEnd() && itrZoneInfo->value.IsString()) {
+		sleepItem.zone_info = itrZoneInfo->value.GetString();
+	    }
+	    if (itrAssessment != v.MemberEnd() && itrAssessment->value.IsObject()) {
+		auto itr_cas = itrAssessment->value.FindMember("combined_awake_score");
+		auto itr_ats = itrAssessment->value.FindMember("awake_time_score");
+		auto itr_acs = itrAssessment->value.FindMember("awakenings_count_score");
+		auto itr_dss = itrAssessment->value.FindMember("deep_sleep_score");
+		auto itr_sds = itrAssessment->value.FindMember("sleep_duration_score");
+		auto itr_lss = itrAssessment->value.FindMember("light_sleep_score");
+		auto itr_oss = itrAssessment->value.FindMember("overall_sleep_score");
+		auto itr_sqs = itrAssessment->value.FindMember("sleep_quality_score");
+		auto itr_srs = itrAssessment->value.FindMember("sleep_recovery_score");
+		auto itr_rss = itrAssessment->value.FindMember("rem_sleep_score");
+		auto itr_sres = itrAssessment->value.FindMember("sleep_restlessness_score");
+		auto itr_ac = itrAssessment->value.FindMember("awakenings_count");
+		auto itr_is = itrAssessment->value.FindMember("interruptions_score");
+		auto itr_asds = itrAssessment->value.FindMember("average_stress_during_sleep");
+
+		struct fitgalgo::SleepAssessment assessment{};
+
+		if (itr_cas != itrAssessment->value.MemberEnd() && itr_cas->value.IsInt()) {
+		    assessment.combined_awake_score = itr_cas->value.GetInt();
+		}
+		if (itr_ats != itrAssessment->value.MemberEnd() && itr_ats->value.IsInt()) {
+		    assessment.awake_time_score = itr_ats->value.GetInt();
+		}
+		if (itr_acs != itrAssessment->value.MemberEnd() && itr_acs->value.IsInt()) {
+		    assessment.awakenings_count_score = itr_acs->value.GetInt();
+		}
+		if (itr_dss != itrAssessment->value.MemberEnd() && itr_dss->value.IsInt()) {
+		    assessment.deep_sleep_score = itr_dss->value.GetInt();
+		}
+		if (itr_sds != itrAssessment->value.MemberEnd() && itr_sds->value.IsInt()) {
+		    assessment.sleep_duration_score = itr_sds->value.GetInt();
+		}
+		if (itr_lss != itrAssessment->value.MemberEnd() && itr_lss->value.IsInt()) {
+		    assessment.light_sleep_score = itr_lss->value.GetInt();
+		}
+		if (itr_oss != itrAssessment->value.MemberEnd() && itr_oss->value.IsInt()) {
+		    assessment.overall_sleep_score = itr_oss->value.GetInt();
+		}
+		if (itr_sqs != itrAssessment->value.MemberEnd() && itr_sqs->value.IsInt()) {
+		    assessment.sleep_quality_score = itr_sqs->value.GetInt();
+		}
+		if (itr_srs != itrAssessment->value.MemberEnd() && itr_srs->value.IsInt()) {
+		    assessment.sleep_recovery_score = itr_srs->value.GetInt();
+		}
+		if (itr_rss != itrAssessment->value.MemberEnd() && itr_rss->value.IsInt()) {
+		    assessment.rem_sleep_score = itr_rss->value.GetInt();
+		}
+		if (itr_sres != itrAssessment->value.MemberEnd() && itr_sres->value.IsInt()) {
+		    assessment.sleep_restlessness_score = itr_sres->value.GetInt();
+		}
+		if (itr_ac != itrAssessment->value.MemberEnd() && itr_ac->value.IsInt()) {
+		    assessment.awakenings_count = itr_ac->value.GetInt();
+		}
+		if (itr_is != itrAssessment->value.MemberEnd() && itr_is->value.IsInt()) {
+		    assessment.interruptions_score = itr_is->value.GetInt();
+		}
+		if (itr_asds != itrAssessment->value.MemberEnd() && itr_asds->value.IsFloat()) {
+		    assessment.average_stress_during_sleep = itr_asds->value.GetFloat();
+		}
+
+		sleepItem.assessment = assessment;
+	    }
+	    if (itrLevels != v.MemberEnd() && itrLevels->value.IsArray()) {
+		std::vector<fitgalgo::SleepLevel> levels{};
+		for (const auto& l : itrLevels->value.GetArray()) {
+		    if (l.IsObject()) {
+			auto itr_dt_utc = l.FindMember("datetime_utc");
+			auto itr_level = l.FindMember("level");
+
+			fitgalgo::SleepLevel level{};
+
+			if (itr_dt_utc != l.MemberEnd() && itr_dt_utc->value.IsString()) {
+			    level.datetime_utc = itr_dt_utc->value.GetString();
+			}
+			if (itr_level != l.MemberEnd() && itr_level->value.IsString()) {
+			    level.level = itr_level->value.GetString();
+			}
+
+			levels.emplace_back(level);
+		    }
+		}
+		
+		sleepItem.levels = levels;
+	    }
+
+	    std::string idxDates{};
+	    if (itrDates != v.MemberEnd() && itrDates->value.IsArray()) {
+		std::vector<std::string> dates{};
+		for (const auto& d : itrDates->value.GetArray()) {
+		    if (d.IsString()) {
+			sleepItem.dates.emplace_back(d.GetString());
+			idxDates += d.GetString();
+		    }
+		}
+	    }
+
+	    if (!idxDates.empty()) {
+		this->sleep[idxDates] = sleepItem;
+	    } else {
+		this->errors.emplace_back("JSON error: dates are needed.");
+	    }
+	} else {
+	    this->errors.emplace_back(
+		"JSON error: it expects an object with sleep information.");
+
+	}
+    }
+
+    return true;
+}
+
+template <typename T>
 void fitgalgo::Result<T>::load(const httplib::Result &response)
 {   
     if (!response) {
@@ -189,7 +320,7 @@ void fitgalgo::Result<T>::load(const httplib::Result &response)
     }
 }
 
-template<typename T>
+template <typename T>
 void fitgalgo::Result<T>::load(const T& newData)
 {
     this->data = std::make_unique<T>(newData);
@@ -285,6 +416,17 @@ const fitgalgo::Result<fitgalgo::StepsData> fitgalgo::Connection::getSteps() con
     auto response = client.Get("/monitorings/steps");
     
     fitgalgo::Result<fitgalgo::StepsData> result;
+    result.load(response);
+    return result;
+}
+
+const fitgalgo::Result<fitgalgo::SleepData> fitgalgo::Connection::getSleep() const
+{
+    httplib::Client client(this->host, this->port);
+    client.set_bearer_token_auth(this->token);
+    auto response = client.Get("/monitorings/sleep");
+    
+    fitgalgo::Result<fitgalgo::SleepData> result;
     result.load(response);
     return result;
 }

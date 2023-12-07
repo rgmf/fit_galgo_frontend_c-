@@ -1,3 +1,6 @@
+# Styles ghide
+The [style guides for the project](https://www.stroustrup.com/bs_faq2.html).
+
 # Build with CMake
 This is the command to use to build the program inside `build/` directory. Also, it generates `compile_commands.json` into root project directory so linter can watch include files in `include/` directory:
 

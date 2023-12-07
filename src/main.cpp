@@ -6,7 +6,9 @@
 #include <rapidjson/document.h>
 #include <httplib/httplib.h>
 
-#include "api/fitgalgo.h"
+#include "core/api.h"
+#include "core/stats.h"
+#include "ui/shell.h"
 
 /**
  * @return Message with information and help about programm usage.
@@ -159,6 +161,7 @@ int main(int argc, char* argv[])
 		} while (!std::filesystem::exists(path));
 
 		auto results = conn.post_file(path);
+		unsigned short accepted = 0;
 		for (auto& result : results)
 		{
 		    if (result.is_valid())
@@ -168,9 +171,10 @@ int main(int argc, char* argv[])
 				  << " | accepted: " << ufd.accepted
 				  << std::endl;
 			if (!ufd.errors.empty())
-			{
 			    std::cout << "Errors:" << std::endl;
-			}
+			else
+			    accepted++;
+
 			for (auto& error : ufd.errors)
 			{
 			    std::cout << error << std::endl;
@@ -181,6 +185,8 @@ int main(int argc, char* argv[])
 			std::cerr << result.get_error().error_to_string() << std::endl;
 		    }
 		}
+		std::cout << std::endl << "TOTAL: " << results.size() << std::endl;
+		std::cout << "ACCEPTED: " << accepted << std::endl << std::endl;
 	    }
 	    catch (std::filesystem::filesystem_error& error)
 	    {
@@ -196,14 +202,8 @@ int main(int argc, char* argv[])
 		auto result = conn.get_steps();
 		if (result.is_valid())
 		{
-		    for (auto& [k, v] : result.get_data().steps)
-		    {
-			std::cout << k << ": "
-				  << v.steps << " | "
-				  << v.distance << " | "
-				  << v.calories
-				  << std::endl;
-		    }
+		    auto ui = fitgalgo::ShellSteps(result.get_data());
+		    ui.loop();
 		}
 		else
 		{
@@ -213,9 +213,6 @@ int main(int argc, char* argv[])
 	    catch (const std::exception& e) {
 		std::cerr << "Error: " << e.what() << std::endl;
 	    }
-
-	    std::cout << std::endl << "Press Enter to continue...";
-	    std::cin.get();
 	    break;
 	case 4:
 	    try

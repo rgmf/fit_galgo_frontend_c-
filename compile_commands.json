@@ -7,8 +7,20 @@
 },
 {
   "directory": "/home/roman/workspace/fit_galgo_frontend_c++/build",
-  "command": "/usr/bin/c++  -I/home/roman/workspace/fit_galgo_frontend_c++/include -Wall -Wextra -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/api/fitgalgo.cpp.o -c /home/roman/workspace/fit_galgo_frontend_c++/src/api/fitgalgo.cpp",
-  "file": "/home/roman/workspace/fit_galgo_frontend_c++/src/api/fitgalgo.cpp",
-  "output": "CMakeFiles/fitgalgo.dir/src/api/fitgalgo.cpp.o"
+  "command": "/usr/bin/c++  -I/home/roman/workspace/fit_galgo_frontend_c++/include -Wall -Wextra -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/core/api.cpp.o -c /home/roman/workspace/fit_galgo_frontend_c++/src/core/api.cpp",
+  "file": "/home/roman/workspace/fit_galgo_frontend_c++/src/core/api.cpp",
+  "output": "CMakeFiles/fitgalgo.dir/src/core/api.cpp.o"
+},
+{
+  "directory": "/home/roman/workspace/fit_galgo_frontend_c++/build",
+  "command": "/usr/bin/c++  -I/home/roman/workspace/fit_galgo_frontend_c++/include -Wall -Wextra -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/core/stats.cpp.o -c /home/roman/workspace/fit_galgo_frontend_c++/src/core/stats.cpp",
+  "file": "/home/roman/workspace/fit_galgo_frontend_c++/src/core/stats.cpp",
+  "output": "CMakeFiles/fitgalgo.dir/src/core/stats.cpp.o"
+},
+{
+  "directory": "/home/roman/workspace/fit_galgo_frontend_c++/build",
+  "command": "/usr/bin/c++  -I/home/roman/workspace/fit_galgo_frontend_c++/include -Wall -Wextra -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/ui/shell.cpp.o -c /home/roman/workspace/fit_galgo_frontend_c++/src/ui/shell.cpp",
+  "file": "/home/roman/workspace/fit_galgo_frontend_c++/src/ui/shell.cpp",
+  "output": "CMakeFiles/fitgalgo.dir/src/ui/shell.cpp.o"
 }
 ]

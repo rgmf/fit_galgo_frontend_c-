@@ -1,14 +1,17 @@
 #include <rapidjson/document.h>
 #include <httplib/httplib.h>
 
-#include "fitgalgo.h"
+#include "api.h"
 
-bool fitgalgo::Error::has_error() const
+namespace fitgalgo
+{    
+
+bool Error::has_error() const
 {
     return this->error != ErrorType::Success || this->httplib_error != httplib::Error::Success;
 }
 
-std::string fitgalgo::Error::error_to_string() const
+std::string Error::error_to_string() const
 {
     static const std::map<ErrorType, std::string> errorMessages = {
         {ErrorType::Success, "Success response."},
@@ -51,7 +54,7 @@ std::string fitgalgo::Error::error_to_string() const
     // }
 }
 
-bool fitgalgo::LoginData::load(rapidjson::Document& document)
+bool LoginData::load(rapidjson::Document& document)
 {
     const auto at_member = document.FindMember("access_token");
     if (at_member == document.MemberEnd() || !at_member->value.IsString())
@@ -69,7 +72,7 @@ bool fitgalgo::LoginData::load(rapidjson::Document& document)
     return true;
 }
 
-bool fitgalgo::UploadedFileData::load(rapidjson::Document& document)
+bool UploadedFileData::load(rapidjson::Document& document)
 {
     const auto data = document.FindMember("data");
     if (data == document.MemberEnd() || !data->value.IsArray())
@@ -118,7 +121,7 @@ bool fitgalgo::UploadedFileData::load(rapidjson::Document& document)
     return true;
 }
 
-bool fitgalgo::StepsData::load(rapidjson::Document& document)
+bool StepsData::load(rapidjson::Document& document)
 {
     const auto data = document.FindMember("data");
     if (data == document.MemberEnd() || !data->value.IsArray())
@@ -136,7 +139,7 @@ bool fitgalgo::StepsData::load(rapidjson::Document& document)
 	    auto itr_distance = v.FindMember("total_distance");
 	    auto itr_calories = v.FindMember("total_calories");
 
-	    struct fitgalgo::Steps item{};
+	    struct Steps item{};
 
 	    item.datetime_local = itr_dt_local->value.GetString();
 
@@ -164,7 +167,7 @@ bool fitgalgo::StepsData::load(rapidjson::Document& document)
     return true;
 }
 
-bool fitgalgo::SleepData::load(rapidjson::Document& document)
+bool SleepData::load(rapidjson::Document& document)
 {
     const auto data = document.FindMember("data");
     if (data == document.MemberEnd() || !data->value.IsArray())
@@ -181,7 +184,7 @@ bool fitgalgo::SleepData::load(rapidjson::Document& document)
 	    auto itrLevels = v.FindMember("levels");
 	    auto itrDates = v.FindMember("dates");
 
-	    struct fitgalgo::Sleep sleepItem{};
+	    struct Sleep sleepItem{};
 
 	    if (itrZoneInfo != v.MemberEnd() && itrZoneInfo->value.IsString())
 	    {
@@ -205,7 +208,7 @@ bool fitgalgo::SleepData::load(rapidjson::Document& document)
 		auto itr_is = itrAssessment->value.FindMember("interruptions_score");
 		auto itr_asds = itrAssessment->value.FindMember("average_stress_during_sleep");
 
-		struct fitgalgo::SleepAssessment assessment{};
+		struct SleepAssessment assessment{};
 
 		if (itr_cas != itrAssessment->value.MemberEnd() && itr_cas->value.IsInt())
 		    assessment.combined_awake_score = itr_cas->value.GetInt();
@@ -254,7 +257,7 @@ bool fitgalgo::SleepData::load(rapidjson::Document& document)
 
 	    if (itrLevels != v.MemberEnd() && itrLevels->value.IsArray())
 	    {
-		std::vector<fitgalgo::SleepLevel> levels{};
+		std::vector<SleepLevel> levels{};
 		for (const auto& l : itrLevels->value.GetArray())
 		{
 		    if (l.IsObject())
@@ -262,7 +265,7 @@ bool fitgalgo::SleepData::load(rapidjson::Document& document)
 			auto itr_dt_utc = l.FindMember("datetime_utc");
 			auto itr_level = l.FindMember("level");
 
-			fitgalgo::SleepLevel level{};
+			SleepLevel level{};
 
 			if (itr_dt_utc != l.MemberEnd() && itr_dt_utc->value.IsString())
 			    level.datetime_utc = itr_dt_utc->value.GetString();
@@ -307,11 +310,11 @@ bool fitgalgo::SleepData::load(rapidjson::Document& document)
 }
 
 template <typename T>
-void fitgalgo::Result<T>::load(const httplib::Result &response)
+void Result<T>::load(const httplib::Result &response)
 {   
     if (!response)
     {
-	this->error = fitgalgo::Error(fitgalgo::ErrorType::NotResponse);
+	this->error = Error(ErrorType::NotResponse);
 	return;
     }
 
@@ -319,31 +322,31 @@ void fitgalgo::Result<T>::load(const httplib::Result &response)
 
     if (response->status < 200)
     {
-	this->error = fitgalgo::Error(fitgalgo::ErrorType::Http100, response.error());
+	this->error = Error(ErrorType::Http100, response.error());
 	return;
     }
 
     if (response->status >= 300 && response->status < 400)
     {
-	this->error = fitgalgo::Error(fitgalgo::ErrorType::Http300, response.error());
+	this->error = Error(ErrorType::Http300, response.error());
 	return;
     }
 
     if (response->status == 401)
     {
-	this->error = fitgalgo::Error(fitgalgo::ErrorType::Http401, response.error());
+	this->error = Error(ErrorType::Http401, response.error());
 	return;
     }
 
     if (response->status > 401 && response->status < 500)
     {
-	this->error = fitgalgo::Error(fitgalgo::ErrorType::Http400, response.error());
+	this->error = Error(ErrorType::Http400, response.error());
 	return;
     }
 
     if (response->status >= 500)
     {
-	this->error = fitgalgo::Error(fitgalgo::ErrorType::Http500, response.error());
+	this->error = Error(ErrorType::Http500, response.error());
 	return;
     }
 
@@ -353,18 +356,18 @@ void fitgalgo::Result<T>::load(const httplib::Result &response)
     bool is_valid = this->data->load(document);
 
     if (is_valid)
-	this->error = fitgalgo::Error(fitgalgo::ErrorType::Success, response.error());
+	this->error = Error(ErrorType::Success, response.error());
     else
-	this->error = fitgalgo::Error(fitgalgo::ErrorType::NotData, response.error());
+	this->error = Error(ErrorType::NotData, response.error());
 }
 
 template <typename T>
-void fitgalgo::Result<T>::load(const T& newData)
+void Result<T>::load(const T& newData)
 {
     this->data = std::make_unique<T>(newData);
 }
 
-const fitgalgo::Result<fitgalgo::LoginData> fitgalgo::Connection::login(
+const Result<LoginData> Connection::login(
     const std::string& username, const std::string& password)
 {
     httplib::Client client(this->host, this->port);
@@ -375,7 +378,7 @@ const fitgalgo::Result<fitgalgo::LoginData> fitgalgo::Connection::login(
     auto response = client.Post(
 	"/auth/login", credentials.str(), "application/x-www-form-urlencoded");
 
-    fitgalgo::Result<fitgalgo::LoginData> result;
+    Result<LoginData> result;
     result.load(response);
 
     if (result.is_valid())
@@ -384,11 +387,11 @@ const fitgalgo::Result<fitgalgo::LoginData> fitgalgo::Connection::login(
     return result;
 }
 
-void fitgalgo::Connection::logout() { this->token = ""; }
+void Connection::logout() { this->token = ""; }
 
-bool fitgalgo::Connection::has_token() const { return !this->token.empty(); }
+bool Connection::has_token() const { return !this->token.empty(); }
 
-const fitgalgo::Result<fitgalgo::UploadedFileData> fitgalgo::Connection::do_post_for_file(
+const Result<UploadedFileData> Connection::do_post_for_file(
     httplib::Client& client, const std::filesystem::path& path) const
 {
     try
@@ -406,28 +409,28 @@ const fitgalgo::Result<fitgalgo::UploadedFileData> fitgalgo::Connection::do_post
 	};
 
 	auto response = client.Post("/files/", items);
-	fitgalgo::Result<fitgalgo::UploadedFileData> result;
+	Result<UploadedFileData> result;
 	result.load(response);
 	return result;
     }
     catch (const std::exception& e)
     {
-	fitgalgo::UploadedFileData ufd;
+	UploadedFileData ufd;
 	ufd.file_path = path.string();
 	ufd.accepted = false;
 	ufd.errors = {e.what()};
 
-        fitgalgo::Result<fitgalgo::UploadedFileData> result;
+        Result<UploadedFileData> result;
 	result.load(ufd);
 
 	return result;
     }
 }
 
-const std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> fitgalgo::Connection::post_file(
+const std::vector<Result<UploadedFileData>> Connection::post_file(
     std::filesystem::path& path) const
 {
-    std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> results;
+    std::vector<Result<UploadedFileData>> results;
 
     httplib::Client client(this->host, this->port);
     client.set_bearer_token_auth(this->token);
@@ -453,24 +456,26 @@ const std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> fitgalgo::Connec
     return results;
 }
 
-const fitgalgo::Result<fitgalgo::StepsData> fitgalgo::Connection::get_steps() const
+const Result<StepsData> Connection::get_steps() const
 {
     httplib::Client client(this->host, this->port);
     client.set_bearer_token_auth(this->token);
     auto response = client.Get("/monitorings/steps");
     
-    fitgalgo::Result<fitgalgo::StepsData> result;
+    Result<StepsData> result;
     result.load(response);
     return result;
 }
 
-const fitgalgo::Result<fitgalgo::SleepData> fitgalgo::Connection::get_sleep() const
+const Result<SleepData> Connection::get_sleep() const
 {
     httplib::Client client(this->host, this->port);
     client.set_bearer_token_auth(this->token);
     auto response = client.Get("/monitorings/sleep");
     
-    fitgalgo::Result<fitgalgo::SleepData> result;
+    Result<SleepData> result;
     result.load(response);
     return result;
 }
+
+} // namespace fitgalgo

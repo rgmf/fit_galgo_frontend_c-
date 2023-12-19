@@ -13,10 +13,10 @@ const size_t CELL_MAX_WIDTH = 20;
 
 const size_t NUMBER_OF_WEEKDAYS = 7;
 
-const std::string MONTHS_NAMES[] = { "", "January", "February", "March", "April",
+const std::string MONTHS_NAMES[] = { "January", "February", "March", "April",
 				     "May",	"June", "July", "August", "September",
 				     "October", "November", "December" };
-const std::string ISO_DAYS_NAMES[] = { "", "Monday", "Tuesday", "Wednesday",
+const std::string ISO_DAYS_NAMES[] = { "Monday", "Tuesday", "Wednesday",
 				       "Thursday", "Friday", "Saturday", "Sunday" };
 const std::array<std::string, NUMBER_OF_WEEKDAYS> DAYS_ABBR{
     "Mon", "Tue", "Wed", "Thr", "Fri", "Sat", "Sun"};

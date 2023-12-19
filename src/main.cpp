@@ -198,7 +198,8 @@ int main(int argc, char* argv[])
 	    std::cin.get();
 	    break;
 	case 3:
-	    try {
+	    try
+	    {
 		auto result = conn.get_steps();
 		if (result.is_valid())
 		{

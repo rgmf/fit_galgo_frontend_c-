@@ -17,7 +17,7 @@ using std::endl;
 namespace fitgalgo
 {
 
-ushort ask_for_year()
+inline ushort ask_for_year()
 {
     ushort year;
     do
@@ -29,7 +29,7 @@ ushort ask_for_year()
     return year;
 }
 
-ushort ask_for_month()
+inline ushort ask_for_month()
 {
     ushort month;
     do
@@ -65,7 +65,7 @@ std::string formatted_number(const T& n)
     return res;
 }
 
-void print_steps_stats(const std::string& h, const Steps& s)
+inline void print_steps_stats(const std::string& h, const Steps& s)
 {
     cout << h << endl;
     cout << "-----------------------------------------------------" << endl;

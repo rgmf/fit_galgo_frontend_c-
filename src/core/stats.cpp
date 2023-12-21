@@ -18,7 +18,7 @@ std::chrono::system_clock::time_point parse_dt(
 }
 
 template <typename T>
-Stats<T>::Stats(const std::map<std::string, T>& data)
+Stats<T>::Stats(const std::map<DateIdx, T>& data)
 {
     std::chrono::system_clock::time_point time_point;
     time_t date;
@@ -28,7 +28,7 @@ Stats<T>::Stats(const std::map<std::string, T>& data)
 
     for (const auto& [dt, object] : data)
     {
-	time_point = parse_dt(dt, "%Y-%m-%d");
+	time_point = parse_dt(dt.value(), "%Y-%m-%d");
 	date = std::chrono::system_clock::to_time_t(time_point);
 	dateinfo = localtime(&date);
 
@@ -59,5 +59,6 @@ Stats<T>::Stats(const std::map<std::string, T>& data)
 }
 
 template class Stats<Steps>;
+template class Stats<Sleep>;
 
 } //namespace fitgalgo

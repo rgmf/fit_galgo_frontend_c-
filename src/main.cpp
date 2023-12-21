@@ -221,29 +221,8 @@ int main(int argc, char* argv[])
 		auto result = conn.get_sleep();
 		if (result.is_valid())
 		{
-		    for (auto& [k, v] : result.get_data().sleep)
-		    {
-			std::cout << k << ": "
-				  << "Overall sleep score: "
-				  << v.assessment.overall_sleep_score << " | "
-				  << "Sleep quality score: "
-				  << v.assessment.sleep_quality_score << " | "
-				  << "Awakenings count: "
-				  << v.assessment.awakenings_count << " | "
-				  << v.assessment.combined_awake_score << " | "
-				  << v.assessment.awake_time_score << " | "
-				  << v.assessment.awakenings_count_score << " | "
-				  << v.assessment.deep_sleep_score << " | "
-				  << v.assessment.sleep_duration_score << " | "
-				  << v.assessment.light_sleep_score << " | "
-				  << v.assessment.sleep_recovery_score << " | "
-				  << v.assessment.rem_sleep_score << " | "
-				  << v.assessment.sleep_restlessness_score << " | "
-				  << v.assessment.interruptions_score << " | "
-				  << v.assessment.average_stress_during_sleep
-				  << std::endl;
-			std::cout << "Number of levels: " << v.levels.size() << std::endl << std::endl;
-		    }
+		    auto ui = fitgalgo::ShellSleep(result.get_data());
+		    ui.loop();
 		}
 		else
 		{
@@ -253,9 +232,6 @@ int main(int argc, char* argv[])
 	    catch (const std::exception& e) {
 		std::cerr << "Error: " << e.what() << std::endl;
 	    }
-
-	    std::cout << std::endl << "Press Enter to continue...";
-	    std::cin.get();
 	    break;
 	}
     } while (option != 0);

@@ -131,7 +131,9 @@ bool StepsData::load(rapidjson::Document& document)
 
     for (const auto& v : data->value.GetArray())
     {
-	if (v.IsObject() && v.HasMember("datetime_local"))
+	if (v.IsObject() &&
+	    v.HasMember("datetime_local") &&
+	    DateIdx::is_valid(v["datetime_local"].GetString()))
 	{
 	    auto itr_dt_utc = v.FindMember("datetime_utc");
 	    auto itr_dt_local = v.FindMember("datetime_local");
@@ -154,13 +156,14 @@ bool StepsData::load(rapidjson::Document& document)
 
 	    if (itr_calories != v.MemberEnd() && itr_calories->value.IsInt())
 		item.calories = itr_calories->value.GetInt();
-		
-	    this->steps[item.datetime_local.substr(0, 10)] = item;
+
+	    DateIdx idx(item.datetime_local);
+	    this->steps[idx] = item;
 	}
 	else
 	{
 	    this->errors.emplace_back(
-		"JSON error: a datetime_local item is not an object or not exists.");
+		"JSON error: a datetime_local item is not an object, not exists or is not valid");
 	}
     }
 
@@ -294,10 +297,10 @@ bool SleepData::load(rapidjson::Document& document)
 		}
 	    }
 
-	    if (!idxDates.empty())
-		this->sleep[idxDates] = sleepItem;
+	    if (!idxDates.empty() && DateIdx::is_valid(idxDates))
+		this->sleep[DateIdx(idxDates)] = sleepItem;
 	    else
-		this->errors.emplace_back("JSON error: dates are needed.");
+		this->errors.emplace_back("JSON error: dates are no valid or are not dates.");
 	}
 	else
 	{

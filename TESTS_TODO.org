@@ -1,0 +1,36 @@
+* shell.cpp:formatted_number
+Comprobar que esta función genérica formatea números enteros y reales.
+Deja solo dos decimales y espacios para separar miles.
+
+* DateIdx
+Comprobar que is_long_date y is_short_date funcionan.
+Pensar si el constructor debería lanzar un excepción si lo que se recibie no contiene fecha.
+
+* Sleep
+En un día se puede haber dormido dos veces. Por ejemplo, un día me fui a dormir después de la medianoche y al otro antes de la medianoche.
+
+Tendría en este caso estos dos keys:
+- 2023120120231201
+- 2023120120231202
+
+Al calcular el día en que se durmió cojo el primer día, que en ambos casos es: 2023-12-01.
+
+Esto significa que en los operator+= y operator+ lo que hago en el SleepAssessment es calcular la media y no sumar.
+
+* Sleep después de medianoche
+Cuando me acuesto a dormir más allá de media noche, entonces se da el caso de que aparece que un día no dormí y la media del día siguiente en el que pude dormir dos veces si me acosté el segundo día antes de la medianoche.
+
+Debería ajustar esto.
+
+Mirar en core/stats.cpp, constructor genérico Stats donde sumo los objetos. Quizás debería hacer algo así:
+
+this->years[year].months[month].weeks[week].days += object;
+
+En vez de:
+
+this->years[year].months[month].weeks[week].days[day] += object;
+
+De manera que el la clase WeekStats añada algo para generar dos días ajustando todos estos casos.
+
+* ShellSleep::yearly_stats,monthly_stats,week_stats ~= ShellSteps::yearly_stats,monthly_stats,week_stats
+Son prácticamente iguales, seguramente los puedo hacer genéricos estos métodos.

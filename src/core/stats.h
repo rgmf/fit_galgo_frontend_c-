@@ -4,6 +4,8 @@
 #include <map>
 #include <string>
 
+#include "../core/api.h"
+
 namespace fitgalgo
 {
 
@@ -32,7 +34,7 @@ private:
     std::map<int, YearStats<T>> years{};
 
 public:
-    Stats(const std::map<std::string, T>& data);
+    Stats(const std::map<DateIdx, T>& data);
     const std::map<int, YearStats<T>> get_data() const { return this->years; }
 };
 

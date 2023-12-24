@@ -28,7 +28,7 @@ private:
     std::vector<std::string> values;
 
 public:
-    Cell(const std::chrono::year_month_day &ymd) : ymd(ymd), values() {}
+    explicit Cell(const std::chrono::year_month_day &ymd) : ymd(ymd), values() {}
     void append(const std::string &value);
     bool operator==(const Cell& rhs) { return this->ymd == rhs.ymd; }
     const std::string& get(const ushort& i) const;
@@ -54,7 +54,7 @@ private:
     inline void print_new_line() const;
 
 public:
-    Calendar(const ushort year, const ushort month);
+    explicit Calendar(const ushort year, const ushort month);
     std::chrono::year_month_day get_first_wd_ymd() const { return this->first_wd_ymd; }
     std::chrono::year_month_day get_last_wd_ymd() const { return this->last_wd_ymd; }
     void add(const std::chrono::year_month_day& ymd, const std::string& value);

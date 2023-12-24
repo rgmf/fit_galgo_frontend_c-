@@ -54,11 +54,12 @@ Stats<T>::Stats(const std::map<DateIdx, T>& data)
 	if (!this->years[year].months[month].weeks.contains(week))
 	    this->years[year].months[month].weeks[week] = WeekStats<T>();
 
-	this->years[year].months[month].weeks[week].days[day] += object;
+	this->years[year].months[month].weeks[week].days[day].stats.emplace_back(object);
     }
 }
 
 template class Stats<Steps>;
 template class Stats<Sleep>;
+template class Stats<Activity>;
 
 } //namespace fitgalgo

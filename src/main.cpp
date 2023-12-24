@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <filesystem>
 
 #include <termios.h>
 
@@ -111,6 +112,7 @@ int main(int argc, char* argv[])
 	std::cout << "2.- Upload file" << std::endl;
 	std::cout << "3.- Steps" << std::endl;
 	std::cout << "4.- Sleep" << std::endl;
+	std::cout << "5.- Activities" << std::endl;
 	std::cout << "0.- Exit" << std::endl;
 	std::cout << "Select an option: ";
 	std::cin >> option;
@@ -209,10 +211,14 @@ int main(int argc, char* argv[])
 		else
 		{
 		    std::cerr << result.get_error().error_to_string() << std::endl;
+		    std::cout << std::endl << "Press Enter to continue...";
+		    std::cin.get();
 		}
 	    }
 	    catch (const std::exception& e) {
 		std::cerr << "Error: " << e.what() << std::endl;
+		std::cout << std::endl << "Press Enter to continue...";
+		std::cin.get();
 	    }
 	    break;
 	case 4:
@@ -227,10 +233,36 @@ int main(int argc, char* argv[])
 		else
 		{
 		    std::cerr << result.get_error().error_to_string() << std::endl;
+		    std::cout << std::endl << "Press Enter to continue...";
+		    std::cin.get();
 		}
 	    }
 	    catch (const std::exception& e) {
 		std::cerr << "Error: " << e.what() << std::endl;
+		std::cout << std::endl << "Press Enter to continue...";
+		std::cin.get();
+	    }
+	    break;
+	case 5:
+	    try
+	    {
+		auto result = conn.get_activities();
+		if (result.is_valid())
+		{
+		    auto ui = fitgalgo::ShellActivities(result.get_data());
+		    ui.loop();
+		}
+		else
+		{
+		    std::cerr << result.get_error().error_to_string() << std::endl;
+		    std::cout << std::endl << "Press Enter to continue...";
+		    std::cin.get();
+		}
+	    }
+	    catch (const std::exception& e) {
+		std::cerr << "Error: " << e.what() << std::endl;
+		std::cout << std::endl << "Press Enter to continue...";
+		std::cin.get();
 	    }
 	    break;
 	}

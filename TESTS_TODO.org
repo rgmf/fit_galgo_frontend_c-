@@ -34,3 +34,9 @@ De manera que el la clase WeekStats añada algo para generar dos días ajustando
 
 * ShellSleep::yearly_stats,monthly_stats,week_stats ~= ShellSteps::yearly_stats,monthly_stats,week_stats
 Son prácticamente iguales, seguramente los puedo hacer genéricos estos métodos.
+
+* Cuando hay un error de varios ficheros cargados en stats da error general
+Debería mostrar lo que haya e indicar qué errores hay, pero que no acabe.
+
+* api.cpp: Sleep::is_early_morning()
+Probar qué pasa cuando no se pueda hacer conversión a número entero. Debería devolver false.

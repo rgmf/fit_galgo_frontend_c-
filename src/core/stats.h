@@ -10,9 +10,15 @@ namespace fitgalgo
 {
 
 template <typename T>
+struct DayStats
+{
+    std::vector<T> stats{};
+};
+
+template <typename T>
 struct WeekStats
 {
-    std::map<int, T> days{};
+    std::map<int, DayStats<T>> days{};
 };
 
 template <typename T>
@@ -34,7 +40,7 @@ private:
     std::map<int, YearStats<T>> years{};
 
 public:
-    Stats(const std::map<DateIdx, T>& data);
+    explicit Stats(const std::map<DateIdx, T>& data);
     const std::map<int, YearStats<T>> get_data() const { return this->years; }
 };
 

@@ -4,11 +4,7 @@
 
 #include <termios.h>
 
-#include <rapidjson/document.h>
-#include <httplib/httplib.h>
-
 #include "core/api.h"
-#include "core/stats.h"
 #include "ui/shell.h"
 
 /**

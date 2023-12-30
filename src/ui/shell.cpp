@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <format>
@@ -9,8 +8,6 @@
 
 #include "shell.h"
 #include "calendar.h"
-#include "../core/stats.h"
-#include "../core/api.h"
 
 using std::cin;
 using std::cout;
@@ -126,27 +123,27 @@ void ShellSteps::year_stats() const
     system("clear");
     cout << "YEARLY STEPS STATS" << endl;
     cout << "=====================================================" << endl;
-    for (const auto& [year, years] : this->stats.get_data())
+
+    if (data.steps.empty())
     {
-        Steps all_steps = std::accumulate(
-            years.months.begin(), years.months.end(), Steps{},
-            [](const auto& acc, const auto& month_entry) {
-                return std::accumulate(
-                    month_entry.second.weeks.begin(), month_entry.second.weeks.end(), acc,
-                    [](const auto& acc, const auto& week_entry) {
-                        return std::accumulate(
-                            week_entry.second.days.begin(), week_entry.second.days.end(), acc,
-                            [](const auto& acc, const auto& day_entry) {
-				return std::accumulate(
-				    day_entry.second.stats.begin(), day_entry.second.stats.end(), acc,
-				    [](const auto& acc, const auto& object) {
-					return acc + object;
-				    });
-                            });
-                    });
-            });
-	print_steps_stats(std::format("Year {}", year), all_steps);
+	cout << "There are not steps data to show" << endl;
+	return;
     }
+
+    std::string current_year = this->data.steps.begin()->first.year();
+    Steps all_steps{};
+    for (const auto& [idx, steps] : this->data.steps)
+    {
+	if (current_year != idx.year())
+	{
+	    print_steps_stats(std::format("Year {}", current_year), all_steps);
+	    current_year = idx.year();
+	    all_steps = Steps{};
+	}
+	all_steps += steps;
+    }
+
+    print_steps_stats(std::format("Year {}", current_year), all_steps);
 }
 
 void ShellSteps::month_stats(const ushort& year) const
@@ -154,133 +151,73 @@ void ShellSteps::month_stats(const ushort& year) const
     system("clear");
     cout << "MONTHLY STEPS STATS FOR YEAR " << year << endl;
     cout << "=====================================================" << endl;
-    const auto& data = this->stats.get_data();
-    if (!data.contains(year))
+
+    const auto year_str = std::to_string(year);
+
+    auto itr = std::find_if(
+	this->data.steps.cbegin(),
+	this->data.steps.cend(),
+	[year_str](const auto& item) { return item.first.year() == year_str; });
+
+    if (itr == this->data.steps.end())
     {
 	cout << "There are not data for this year" << endl;
 	return;
     }
 
-    for (const auto& [month, months] : data.at(year).months)
+    std::string current_month = itr->first.month();
+    Steps all_steps{};
+    while (itr != this->data.steps.end() && itr->first.year() == year_str)
     {
-	Steps all_steps = std::accumulate(
-	    months.weeks.begin(), months.weeks.end(), Steps{},
-	    [](const auto& acc, const auto& week_entry) {
-		return std::accumulate(
-		    week_entry.second.days.begin(), week_entry.second.days.end(), acc,
-		    [](const auto& acc, const auto& day_entry) {
-			return std::accumulate(
-			    day_entry.second.stats.begin(), day_entry.second.stats.end(), acc,
-			    [](const auto& acc, const auto& object) {
-				return acc + object;
-			    });
-		    });
-	    });
-	print_steps_stats(MONTHS_NAMES[month], all_steps);
+	if (current_month != itr->first.month())
+	{
+	    print_steps_stats(MONTHS_NAMES[std::atoi(current_month.c_str()) - 1], all_steps);
+	    current_month = itr->first.month();
+	    all_steps = Steps{};
+	}
+	all_steps += itr->second;
+	itr++;
     }
+
+    print_steps_stats(MONTHS_NAMES[std::atoi(current_month.c_str()) - 1], all_steps);
 }
 
 void ShellSteps::week_stats(const ushort& year, const ushort& month) const
 {
     system("clear");
-    cout << MONTHS_NAMES[month] << ", " << year << endl;
+    cout << MONTHS_NAMES[month - 1] << ", " << year << endl;
     cout << "=====================================================" << endl;
 
-    const auto& years = this->stats.get_data();
-    if (!years.contains(year))
+    Calendar calendar{year, month};
+    auto first_wd_ymd = calendar.get_first_wd_ymd();
+    auto last_wd_ymd = calendar.get_last_wd_ymd();
+
+    auto year_str = std::to_string(year);
+    auto month_str = std::to_string(month);
+    auto itr = std::find_if(
+	this->data.steps.cbegin(),
+	this->data.steps.cend(),
+	[year_str, month_str, first_wd_ymd](const auto& item) {
+	    return item.first.ymd() == first_wd_ymd ||
+		(item.first.year() == year_str && item.first.month() == month_str);
+	});
+    if (itr == this->data.steps.end())
     {
-	cout << "There are not data for year " << year << endl;
-	return;
+     	cout << "There are not data for this date " << endl;
+     	return;
     }
 
-    const auto& ystats = years.at(year);
-    if (!ystats.months.contains(month - 1))
+    while (itr != this->data.steps.end() && itr->first.ymd() <= last_wd_ymd)
     {
-	cout << "There are not data for month " << MONTHS_NAMES[month] << endl;
-	return;
-    }
+	std::string s1 = std::to_string(itr->second.steps) + " steps";
+	std::string s2 = std::to_string(
+	    static_cast<int>(std::round(itr->second.distance))) + " m";
+	std::string s3 = std::to_string(itr->second.calories) + " kcal";
 
-    const auto& mstats = ystats.months.at(month - 1);
-    MonthStats<Steps> month_stats(mstats);
-
-    // Complete first week with days off this month.
-    if (ystats.months.contains(month - 2))
-    {
-	const auto& mstats_before = ystats.months.at(month - 2);
-	for (auto itr = mstats_before.weeks.begin(); itr != mstats_before.weeks.end(); itr++)
-	{
-	    if (mstats.weeks.contains(itr->first))
-	    {
-		for (auto iday = itr->second.days.begin(); iday != itr->second.days.end(); iday++)
-		{
-		    month_stats.weeks[itr->first].days[iday->first] = iday->second;
-		}
-	    }
-	}
-    }
-
-    // Complete last week with days off this month.
-    if (ystats.months.contains(month))
-    {
-	const auto& mstats_after = ystats.months.at(month);
-	for (auto itr = mstats_after.weeks.begin(); itr != mstats_after.weeks.end(); itr++)
-	{
-	    if (mstats.weeks.contains(itr->first))
-	    {
-		// cout << "ESTÁ: " << itr->first << endl;
-		for (auto iday = itr->second.days.begin(); iday != itr->second.days.end(); iday++)
-		{
-		    month_stats.weeks[itr->first].days[iday->first] = iday->second;
-		}
-	    }
-	}
-    }
-
-    std::map<std::chrono::year_month_day, Steps> steps_by_day{};
-    for (auto itr = month_stats.weeks.begin(); itr != month_stats.weeks.end(); itr++)
-    {
-	for (auto itr_day = itr->second.days.begin();
-	     itr_day != itr->second.days.end();
-	     itr_day++)
-	{
-	    for (const auto& steps : itr_day->second.stats)
-	    {
-		std::istringstream stream(steps.datetime_local);
-		int year, month, day;
-		char dash;
-
-		stream >> year >> dash >> month >> dash >> day;
-		if (!stream.fail() && !stream.bad())
-		{
-		    std::chrono::year_month_day ymd{
-			std::chrono::year(year),
-			std::chrono::month(month),
-			std::chrono::day(day)};
-		    steps_by_day[ymd] += steps;
-		}
-	    }
-	}
-    }
-
-    Calendar calendar(year, month);
-    auto ymd = calendar.get_first_wd_ymd();
-    auto last_ymd = calendar.get_last_wd_ymd();
-    while (ymd <= last_ymd)
-    {
-	if (steps_by_day.contains(ymd))
-	{
-	    std::string s1 = std::to_string(steps_by_day[ymd].steps) + " steps";
-	    std::string s2 = std::to_string(
-		static_cast<int>(std::round(steps_by_day[ymd].distance))) + " m";
-	    std::string s3 = std::to_string(steps_by_day[ymd].calories) + " kcal";
-
-	    calendar.add(ymd, s1);
-	    calendar.add(ymd, s2);
-	    calendar.add(ymd, s3);
-	}
-
-	auto sys_days = std::chrono::sys_days(ymd);
-	ymd = std::chrono::year_month_day(sys_days + std::chrono::days(1));
+	calendar.add(itr->first.ymd(), s1);
+	calendar.add(itr->first.ymd(), s2);
+	calendar.add(itr->first.ymd(), s3);
+	itr++;
     }
 
     calendar.print();
@@ -362,27 +299,27 @@ void ShellSleep::year_stats() const
     system("clear");
     cout << "YEARLY SLEEP STATS" << endl;
     cout << "=====================================================" << endl;
-    for (const auto& [year, years] : this->stats.get_data())
+
+    if (this->data.sleep.empty())
     {
-	SleepWithCount sleep_with_count = std::accumulate(
-            years.months.begin(), years.months.end(), SleepWithCount{},
-            [](const auto& acc, const auto& month_entry) {
-                return std::accumulate(
-                    month_entry.second.weeks.begin(), month_entry.second.weeks.end(), acc,
-                    [](const auto& acc, const auto& week_entry) {
-                        return std::accumulate(
-                            week_entry.second.days.begin(), week_entry.second.days.end(), acc,
-                            [](const auto& acc, const auto& day_entry) {
-				return std::accumulate(
-				    day_entry.second.stats.begin(), day_entry.second.stats.end(), acc,
-				    [](const auto& acc, const auto& object) {
-					return SleepWithCount{acc.sleep + object, acc.count + 1};
-				    });
-                            });
-                    });
-            });
-	print_sleep_stats(std::format("Year {}", year), sleep_with_count.sleep, sleep_with_count.count);
+	cout << "There are not sleep data to show" << endl;
+	return;
     }
+
+    std::string current_year = this->data.sleep.begin()->first.year();
+    SleepWithCount swc{};
+    for (const auto& [idx, sleep] : this->data.sleep)
+    {
+	if (current_year != idx.year())
+	{
+	    print_sleep_stats(std::format("Year {}", current_year), swc.sleep, swc.count);
+	    current_year = idx.year();
+	    swc = SleepWithCount{};
+	}
+	swc = SleepWithCount{swc.sleep + sleep, swc.count + 1};
+    }
+
+    print_sleep_stats(std::format("Year {}", current_year), swc.sleep, swc.count);
 }
 
 void ShellSleep::month_stats(const ushort& year) const
@@ -390,179 +327,102 @@ void ShellSleep::month_stats(const ushort& year) const
     system("clear");
     cout << "MONTHLY SLEEP STATS FOR YEAR " << year << endl;
     cout << "=====================================================" << endl;
-    const auto& data = this->stats.get_data();
-    if (!data.contains(year))
+
+    const auto year_str = std::to_string(year);
+
+    auto itr = std::find_if(
+	this->data.sleep.cbegin(),
+	this->data.sleep.cend(),
+	[year_str](const auto& item) { return item.first.year() == year_str; });
+    if (itr == this->data.sleep.end())
     {
 	cout << "There are not data for this year" << endl;
 	return;
     }
 
-    for (const auto& [month, months] : data.at(year).months)
+    std::string current_month = itr->first.month();
+    SleepWithCount swc{};
+    while (itr != this->data.sleep.end() && itr->first.year() == year_str)
     {
-	SleepWithCount sleep_with_count = std::accumulate(
-	    months.weeks.begin(), months.weeks.end(), SleepWithCount{},
-	    [](const auto& acc, const auto& week_entry) {
-		return std::accumulate(
-		    week_entry.second.days.begin(), week_entry.second.days.end(), acc,
-		    [](const auto& acc, const auto& day_entry) {
-			return std::accumulate(
-			    day_entry.second.stats.begin(), day_entry.second.stats.end(), acc,
-			    [](const auto& acc, const auto& object) {
-				return SleepWithCount{acc.sleep + object, acc.count + 1};
-			    });
-		    });
-	    });
-	print_sleep_stats(MONTHS_NAMES[month], sleep_with_count.sleep, sleep_with_count.count);
+	if (current_month != itr->first.month())
+	{
+	    print_sleep_stats(MONTHS_NAMES[std::atoi(current_month.c_str()) - 1], swc.sleep, swc.count);
+	    current_month = itr->first.month();
+	    swc = SleepWithCount{};
+	}
+	swc = SleepWithCount{swc.sleep + itr->second, swc.count + 1};
+	itr++;
     }
+
+    print_sleep_stats(MONTHS_NAMES[std::atoi(current_month.c_str()) - 1], swc.sleep, swc.count);
 }
 
 void ShellSleep::week_stats(const ushort& year, const ushort& month) const
 {
     system("clear");
-    cout << MONTHS_NAMES[month] << ", " << year << endl;
+    cout << MONTHS_NAMES[month - 1] << ", " << year << endl;
     cout << "=====================================================" << endl;
 
-    const auto& years = this->stats.get_data();
-    if (!years.contains(year))
+    Calendar calendar{year, month};
+    auto first_wd_ymd = calendar.get_first_wd_ymd();
+    auto last_wd_ymd = calendar.get_last_wd_ymd();
+
+    auto year_str = std::to_string(year);
+    auto month_str = std::to_string(month);
+    auto itr = std::find_if(
+	this->data.sleep.cbegin(),
+	this->data.sleep.cend(),
+	[year_str, month_str, first_wd_ymd](const auto& item) {
+	    return item.first.ymd() == first_wd_ymd ||
+		(item.first.year() == year_str && item.first.month() == month_str);
+	});
+    if (itr == this->data.sleep.end())
     {
-	cout << "There are not data for year " << year << endl;
-	return;
+     	cout << "There are not data for this date " << endl;
+     	return;
     }
 
-    const auto& ystats = years.at(year);
-    if (!ystats.months.contains(month - 1))
+    while (itr != this->data.sleep.end() && itr->first.ymd() <= last_wd_ymd)
     {
-	cout << "There are not data for month " << MONTHS_NAMES[month] << endl;
-	return;
-    }
+	std::string s1 = "Overall    " +
+	    std::to_string(
+		static_cast<int>(std::round(itr->second.assessment.overall_sleep_score)));
+	std::string s2 = "Deep       " +
+	    std::to_string(
+		static_cast<int>(std::round(itr->second.assessment.deep_sleep_score)));
+	std::string s3 = "REM        " +
+	    std::to_string(
+		static_cast<int>(std::round(itr->second.assessment.rem_sleep_score)));
+	std::string s4 = "Light      " +
+	    std::to_string(
+		static_cast<int>(std::round(itr->second.assessment.light_sleep_score)));
+	std::string s5 = "Awakenings " +
+	    std::to_string(
+		static_cast<int>(std::round(itr->second.assessment.awakenings_count)));
 
-    const auto& mstats = ystats.months.at(month - 1);
-    MonthStats<Sleep> month_stats(mstats);
-
-    // Complete first week with days off this month.
-    if (ystats.months.contains(month - 2))
-    {
-	const auto& mstats_before = ystats.months.at(month - 2);
-	for (auto itr = mstats_before.weeks.begin(); itr != mstats_before.weeks.end(); itr++)
+	if (itr->second.is_early_morning())
 	{
-	    if (mstats.weeks.contains(itr->first))
-	    {
-		for (auto iday = itr->second.days.begin(); iday != itr->second.days.end(); iday++)
-		{
-		    month_stats.weeks[itr->first].days[iday->first] = iday->second;
-		}
-	    }
+	    auto ymd = itr->first.ymd();
+
+	    auto yesterday = std::chrono::year_month_day(
+		std::chrono::sys_days(ymd) - std::chrono::days(1));
+
+	    calendar.add(yesterday, s1);
+	    calendar.add(yesterday, s2);
+	    calendar.add(yesterday, s3);
+	    calendar.add(yesterday, s4);
+	    calendar.add(yesterday, s5);
 	}
-    }
-
-    // Complete last week with days off this month.
-    if (ystats.months.contains(month))
-    {
-	const auto& mstats_after = ystats.months.at(month);
-	for (auto itr = mstats_after.weeks.begin(); itr != mstats_after.weeks.end(); itr++)
+	else
 	{
-	    if (mstats.weeks.contains(itr->first))
-	    {
-		for (auto iday = itr->second.days.begin(); iday != itr->second.days.end(); iday++)
-		{
-		    month_stats.weeks[itr->first].days[iday->first] = iday->second;
-		}
-	    }
-	}
-    }
-
-    std::map<std::chrono::year_month_day, Sleep> sleep_by_day{};
-    for (auto itr = month_stats.weeks.begin(); itr != month_stats.weeks.end(); itr++)
-    {
-	for (auto itr_day = itr->second.days.begin();
-	     itr_day != itr->second.days.end();
-	     itr_day++)
-	{
-	    for (const auto& sleep : itr_day->second.stats)
-	    {
-		if (sleep.dates.size() == 2)
-		{
-		    std::string dtl{sleep.dates[0]};
-
-		    if (sleep.is_early_morning())
-		    {
-			// From string to year_month_day
-			std::istringstream ss(sleep.dates[0].substr(0, 10));
-			int year, month, day;
-			char dash1, dash2;
-			ss >> year >> dash1 >> month >> dash2 >> day;
-			auto ymd = std::chrono::year(year) /
-			    std::chrono::month(month) /
-			    std::chrono::day(day);
-
-			// Substract one day to ymd
-			auto yesterday = std::chrono::year_month_day(
-			    std::chrono::sys_days(ymd) - std::chrono::days(1));
-
-			// From year_month_day to string
-			std::ostringstream oss;
-			oss << std::setw(4) << std::setfill('0')
-			    << static_cast<int>(yesterday.year())
-			    << '-' << std::setw(2) << std::setfill('0')
-			    << static_cast<unsigned>(yesterday.month())
-			    << '-' << std::setw(2) << std::setfill('0')
-			    << static_cast<unsigned>(yesterday.day());
-
-			// Update dtl
-			dtl = oss.str();
-		    }
-
-		    std::istringstream stream(dtl);
-		    int year, month, day;
-		    char dash;
-
-		    stream >> year >> dash >> month >> dash >> day;
-		    if (!stream.fail() && !stream.bad())
-		    {
-			std::chrono::year_month_day ymd{
-			    std::chrono::year(year),
-			    std::chrono::month(month),
-			    std::chrono::day(day)};
-			sleep_by_day[ymd] = sleep_by_day.contains(ymd) ?
-			    (sleep_by_day[ymd] + sleep) / 2 :
-			    sleep;
-		    }
-		}
-	    }
-	}
-    }
-
-    Calendar calendar(year, month);
-    auto ymd = calendar.get_first_wd_ymd();
-    auto last_ymd = calendar.get_last_wd_ymd();
-    while (ymd <= last_ymd)
-    {
-	if (sleep_by_day.contains(ymd))
-	{
-	    std::string s1 = "Overall    " +
-		std::to_string(
-		    static_cast<int>(std::round(sleep_by_day[ymd].assessment.overall_sleep_score)));
-	    std::string s2 = "Deep       " +
-		std::to_string(
-		    static_cast<int>(std::round(sleep_by_day[ymd].assessment.deep_sleep_score)));
-	    std::string s3 = "REM        " +
-		std::to_string(
-		    static_cast<int>(std::round(sleep_by_day[ymd].assessment.rem_sleep_score)));
-	    std::string s4 = "Light      " +
-		std::to_string(
-		    static_cast<int>(std::round(sleep_by_day[ymd].assessment.light_sleep_score)));
-	    std::string s5 = "Awakenings " +
-		std::to_string(
-		    static_cast<int>(std::round(sleep_by_day[ymd].assessment.awakenings_count)));
-	    calendar.add(ymd, s1);
-	    calendar.add(ymd, s2);
-	    calendar.add(ymd, s3);
-	    calendar.add(ymd, s4);
-	    calendar.add(ymd, s5);
+	    calendar.add(itr->first.ymd(), s1);
+	    calendar.add(itr->first.ymd(), s2);
+	    calendar.add(itr->first.ymd(), s3);
+	    calendar.add(itr->first.ymd(), s4);
+	    calendar.add(itr->first.ymd(), s5);
 	}
 
-	auto sys_days = std::chrono::sys_days(ymd);
-	ymd = std::chrono::year_month_day(sys_days + std::chrono::days(1));
+	itr++;
     }
 
     calendar.print();
@@ -633,60 +493,38 @@ void ShellActivities::loop() const
     } while (option != 0);
 }
 
+inline void print_activities_stats(const std::string& header, const Activity& a)
+{
+    cout << header << " | " << a.total_timer_time << endl;
+}
+
 void ShellActivities::dashboard() const
 {
     system("clear");
     cout << "ACTIVITIES STATS" << endl;
     cout << "-------------------------------------------" << endl;
-    cout << "Years with activities: " << this->stats.get_data().size() << endl;
 
-    for (const auto& [year, y_stats] : this->stats.get_data())
+    if (this->data.activities.empty())
     {
-	cout << endl << "AÑO " << year << endl;
-	cout << "-------------------------------------------" << endl;
-	std::map<std::string, int> activities_by_sport{};
-	std::map<std::string, float> distances{};
-	for (const auto& [month, m_stats] : y_stats.months)
-	{
-	    cout << MONTHS_NAMES[month] << endl;
-	    std::map<std::string, int> month_activities_by_sport{};
-	    std::map<std::string, float> month_distances{};
-	    for (const auto& [week, w_stats] : m_stats.weeks)
-	    {
-		for (const auto& [day, d_stats] : w_stats.days)
-		{
-		    for (const auto& stats : d_stats.stats)
-		    {
-			if (stats.sport == "running" || stats.sport == "cycling" ||
-			    stats.sport == "hiking" || stats.sport == "walking")
-			{
-			    distances[stats.sport] += stats.total_distance;
-			    month_distances[stats.sport] += stats.total_distance;
-			}
-			activities_by_sport[stats.sport] += 1;
-			month_activities_by_sport[stats.sport] += 1;
-		    }
-		}
-	    }
-
-	    for (const auto& [sport, count] : month_activities_by_sport)
-	    {
-		cout << "    " << sport << ": " << count << " activities";
-		if (sport == "running" || sport == "cycling" || sport == "hiking" || sport == "walking")
-		    cout << " | distance: " << formatted_number(month_distances[sport] / 1000) << " km";
-		cout << endl;
-	    }
-	    cout << endl;
-	}
-
-	for (const auto& [sport, count] : activities_by_sport)
-	{
-	    cout << sport << ": " << count << " activities";
-	    if (sport == "running" || sport == "cycling" || sport == "hiking" || sport == "walking")
-		cout << " | distance: " << formatted_number(distances[sport] / 1000) << " km";
-	    cout << endl;
-	}
+	cout << "There are not activities to show" << endl;
+	return;
     }
+
+    std::map<std::string, Activity> activities{};
+    std::string current_year = this->data.activities.begin()->first.year();
+    for (const auto& [idx, a] : this->data.activities)
+    {
+	if (current_year != idx.year())
+	{
+	    print_activities_stats(std::format("Year {}", current_year), activities);
+	    current_year = idx.year();
+	    activities = {};
+	}
+
+	activities[a.sport] += a;
+    }
+
+    print_activities_stats(std::format("Year {}", current_year), activities);
 }
 
 void ShellActivities::month_stats(const ushort& year) const
@@ -694,138 +532,72 @@ void ShellActivities::month_stats(const ushort& year) const
     system("clear");
     cout << "MONTHLY ACTIVITIES STATS FOR YEAR " << year << endl;
     cout << "=====================================================" << endl;
-    const auto& data = this->stats.get_data();
-    if (!data.contains(year))
+
+    const auto year_str = std::to_string(year);
+
+    auto itr = std::find_if(
+	this->data.activities.cbegin(),
+	this->data.activities.cend(),
+	[year_str](const auto& item) { return item.first.year() == year_str; });
+    if (itr == this->data.activities.end())
     {
 	cout << "There are not data for this year" << endl;
 	return;
     }
 
-    for (const auto& [month, months] : data.at(year).months)
+    std::string current_month = itr->first.month();
+    std::map<std::string, Activity> activities{};
+    while (itr != this->data.activities.end() && itr->first.year() == year_str)
     {
-	std::map<std::string, Activity> activities = std::accumulate(
-	    months.weeks.begin(), months.weeks.end(), std::map<std::string, Activity>{},
-	    [](const auto& acc, const auto& week_entry) {
-		return std::accumulate(
-		    week_entry.second.days.begin(), week_entry.second.days.end(), acc,
-		    [](const auto& acc, const auto& day_entry) {
-			return std::accumulate(
-			    day_entry.second.stats.begin(), day_entry.second.stats.end(), acc,
-			    [](const auto& acc, const auto& object) {
-				auto c_acc{acc};
-				c_acc[object.sport] += object;
-				return c_acc;
-			    });
-		    });
-	    });
-	print_activities_stats(MONTHS_NAMES[month], activities);
+	if (current_month != itr->first.month())
+	{
+	    print_activities_stats(MONTHS_NAMES[std::atoi(current_month.c_str()) - 1], activities);
+	    current_month = itr->first.month();
+	    activities = {};
+	}
+	activities[itr->second.sport] += itr->second;
+	itr++;
     }
+
+    print_activities_stats(MONTHS_NAMES[std::atoi(current_month.c_str()) - 1], activities);
 }
 
 void ShellActivities::week_stats(const ushort& year, const ushort& month) const
 {
     system("clear");
-    cout << MONTHS_NAMES[month] << ", " << year << endl;
+    cout << MONTHS_NAMES[month - 1] << ", " << year << endl;
     cout << "=====================================================" << endl;
 
-    const auto& years = this->stats.get_data();
-    if (!years.contains(year))
+    Calendar calendar{year, month};
+    auto first_wd_ymd = calendar.get_first_wd_ymd();
+    auto last_wd_ymd = calendar.get_last_wd_ymd();
+
+    auto year_str = std::to_string(year);
+    auto month_str = std::to_string(month);
+    auto itr = std::find_if(
+	this->data.activities.cbegin(),
+	this->data.activities.cend(),
+	[year_str, month_str, first_wd_ymd](const auto& item) {
+	    return item.first.ymd() == first_wd_ymd ||
+		(item.first.year() == year_str && item.first.month() == month_str);
+	});
+    if (itr == this->data.activities.end())
     {
-	cout << "There are not data for year " << year << endl;
-	return;
+     	cout << "There are not data for this date " << endl;
+     	return;
     }
 
-    const auto& ystats = years.at(year);
-    if (!ystats.months.contains(month - 1))
+    while (itr != this->data.activities.end() && itr->first.ymd() <= last_wd_ymd)
     {
-	cout << "There are not data for month " << MONTHS_NAMES[month] << endl;
-	return;
-    }
-
-    const auto& mstats = ystats.months.at(month - 1);
-    MonthStats<Activity> month_stats(mstats);
-
-    // Complete first week with days off this month.
-    if (ystats.months.contains(month - 2))
-    {
-	const auto& mstats_before = ystats.months.at(month - 2);
-	for (auto itr = mstats_before.weeks.begin(); itr != mstats_before.weeks.end(); itr++)
-	{
-	    if (mstats.weeks.contains(itr->first))
-	    {
-		for (auto iday = itr->second.days.begin(); iday != itr->second.days.end(); iday++)
-		{
-		    month_stats.weeks[itr->first].days[iday->first] = iday->second;
-		}
-	    }
-	}
-    }
-
-    // Complete last week with days off this month.
-    if (ystats.months.contains(month))
-    {
-	const auto& mstats_after = ystats.months.at(month);
-	for (auto itr = mstats_after.weeks.begin(); itr != mstats_after.weeks.end(); itr++)
-	{
-	    if (mstats.weeks.contains(itr->first))
-	    {
-		// cout << "ESTÁ: " << itr->first << endl;
-		for (auto iday = itr->second.days.begin(); iday != itr->second.days.end(); iday++)
-		{
-		    month_stats.weeks[itr->first].days[iday->first] = iday->second;
-		}
-	    }
-	}
-    }
-
-    std::map<std::chrono::year_month_day, std::vector<Activity>> activities_by_day{};
-    for (auto itr = month_stats.weeks.begin(); itr != month_stats.weeks.end(); itr++)
-    {
-	for (auto itr_day = itr->second.days.begin();
-	     itr_day != itr->second.days.end();
-	     itr_day++)
-	{
-	    for (const auto& activity : itr_day->second.stats)
-	    {
-		std::istringstream stream({activity.start_time_utc});
-		int year, month, day;
-		char dash;
-
-		stream >> year >> dash >> month >> dash >> day;
-		if (!stream.fail() && !stream.bad())
-		{
-		    std::chrono::year_month_day ymd{
-			std::chrono::year(year),
-			std::chrono::month(month),
-			std::chrono::day(day)};
-		    activities_by_day[ymd].emplace_back(activity);
-		}
-	    }
-	}
-    }
-
-    Calendar calendar(year, month);
-    auto ymd = calendar.get_first_wd_ymd();
-    auto last_ymd = calendar.get_last_wd_ymd();
-    while (ymd <= last_ymd)
-    {
-	if (activities_by_day.contains(ymd))
-	{
-	    for (const auto& a : activities_by_day[ymd])
-	    {
-		if (a.total_distance > 0)
-		    calendar.add(
-			ymd,
-			a.sport_profile_name + " (" + formatted_number(a.total_distance / 1000) + " km");
-		else
-		    calendar.add(
-			ymd,
-			a.sport_profile_name + " (" + formatted_number(a.total_elapsed_time / 60) + " min");
-	    }
-	}
-
-	auto sys_days = std::chrono::sys_days(ymd);
-	ymd = std::chrono::year_month_day(sys_days + std::chrono::days(1));
+	std::string s{};
+	if (itr->second.total_distance > 0)
+	    s = itr->second.sport_profile_name +
+		" (" + formatted_number(itr->second.total_distance / 1000) + " km";
+	else
+	    s = itr->second.sport_profile_name +
+		" (" + formatted_number(itr->second.total_elapsed_time / 60) + " min";
+	calendar.add(itr->first.ymd(), s);
+	itr++;
     }
 
     calendar.print();

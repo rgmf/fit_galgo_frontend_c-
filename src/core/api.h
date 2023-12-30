@@ -1,14 +1,14 @@
-#include <chrono>
 #ifndef _ES_RGMF_CORE_API_H
 #define _ES_RGMF_CORE_API_H 1
 
+#include <chrono>
 #include <filesystem>
 #include <string>
 #include <map>
 #include <vector>
 
-#include "httplib/httplib.h"
-#include "rapidjson/document.h"
+#include <httplib/httplib.h>
+#include <rapidjson/document.h>
 
 namespace fitgalgo
 {
@@ -19,24 +19,44 @@ struct Data
     virtual bool load(const rapidjson::Document& document) = 0;
 };
 
+/**
+ * This class handle a datetime in ISO-8601 format (without zone info) in an
+ * string format.
+ *
+ * Its constructor expects these possibles formats:
+ * - yyyy-mm-dd
+ * - yyyy-mm-ddThh:mm:ss
+ * - yyyy-mm-dd hh:mm:ss
+ *
+ * These formats could contains more trailing extra characteres but they will
+ * be ignored.
+ *
+ * In all cases, it keeps the datetime with this format: yyyy-mm-ddThh:mm:ss
+ *
+ * If hour, minutes and seconds are not provided then it will use 00:00:00
+ *
+ * If you try to create an object with an invalid string, then it will generate
+ * an exception.
+ */
 class DateIdx
 {
 private:
-    std::string date{};
+    std::string datetime{};
 
-    inline static bool is_iso8600_with_hour(const std::string& value);
-    inline static bool is_long_date(const std::string& value);
-    inline static bool is_short_date(const std::string& value);
+    inline void set_datetime_if_valid_value(const std::string& value, const std::string& format);
     inline void decrement_date();
 
 public:
-    explicit DateIdx(const std::string& value, const bool& with_hour);
-    const std::string& value() const { return this->date; }
-    bool is_valid() const { return !this->date.empty(); }
+    explicit DateIdx() : datetime() {}
+    explicit DateIdx(const std::string& value);
+    const std::string& value() const;
     std::chrono::year_month_day ymd() const;
+    std::string year() const;
+    std::string month() const;
+    std::string day() const;
+    bool is_valid() const;
     DateIdx& operator--(int);
     DateIdx& operator--();
-    static bool is_valid(const std::string& value);
     friend bool operator<(const DateIdx& l, const DateIdx& r);
 };
 
@@ -73,7 +93,7 @@ struct Steps
 
 struct StepsData : public Data
 {
-    std::map<DateIdx, fitgalgo::Steps> steps{};
+    std::map<DateIdx, Steps> steps{};
     std::vector<std::string> errors{};
 
     bool load(const rapidjson::Document& document) override;
@@ -110,8 +130,8 @@ struct SleepLevel
 struct Sleep
 {
     std::string zone_info{};
-    fitgalgo::SleepAssessment assessment{};
-    std::vector<fitgalgo::SleepLevel> levels{};
+    SleepAssessment assessment{};
+    std::vector<SleepLevel> levels{};
     std::vector<std::string> dates{};
 
     bool is_early_morning() const;
@@ -128,16 +148,10 @@ struct SleepWithCount
 
 struct SleepData : public Data
 {
-    std::map<DateIdx, fitgalgo::Sleep> sleep{};
+    std::map<DateIdx, Sleep> sleep{};
     std::vector<std::string> errors{};
 
     bool load(const rapidjson::Document& document) override;
-};
-
-struct Position
-{
-    float lat{};
-    float lon{};
 };
 
 struct Activity
@@ -147,8 +161,8 @@ struct Activity
     std::string sport_profile_name{};
     std::string sport{};
     std::string sub_sport{};
-    fitgalgo::Position start_position{};
-    fitgalgo::Position end_position{};
+    std::pair<float, float> start_lat_lon{};
+    std::pair<float, float> end_lat_lon{};
     std::string start_time_utc{};
     float total_elapsed_time{};
     float total_timer_time{};
@@ -179,7 +193,7 @@ struct Activity
 
 struct ActivitiesData : public Data
 {
-    std::map<DateIdx, fitgalgo::Activity> activities{};
+    std::map<DateIdx, Activity> activities{};
     std::vector<std::string> errors{};
 
     bool load(const rapidjson::Document& document) override;
@@ -242,21 +256,21 @@ private:
     int port;
     std::string token{};
 
-    const fitgalgo::Result<fitgalgo::UploadedFileData> do_post_for_file(
+    const Result<UploadedFileData> do_post_for_file(
 	httplib::Client& client, const std::filesystem::path& file_path) const;
 
 public:
     explicit Connection(const std::string host, const int port)
 	: host(host), port(port) {}
-    const fitgalgo::Result<fitgalgo::LoginData> login(
+    const Result<LoginData> login(
 	const std::string& username, const std::string& password);
     void logout();
     bool has_token() const;
-    const std::vector<fitgalgo::Result<fitgalgo::UploadedFileData>> post_file(
+    const std::vector<Result<UploadedFileData>> post_file(
 	std::filesystem::path& path) const;
-    const fitgalgo::Result<fitgalgo::StepsData> get_steps() const;
-    const fitgalgo::Result<fitgalgo::SleepData> get_sleep() const;
-    const fitgalgo::Result<fitgalgo::ActivitiesData> get_activities() const;
+    const Result<StepsData> get_steps() const;
+    const Result<SleepData> get_sleep() const;
+    const Result<ActivitiesData> get_activities() const;
 };
 
 } // namespace fitgalgo

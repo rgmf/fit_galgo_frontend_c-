@@ -40,3 +40,6 @@ Debería mostrar lo que haya e indicar qué errores hay, pero que no acabe.
 
 * api.cpp: Sleep::is_early_morning()
 Probar qué pasa cuando no se pueda hacer conversión a número entero. Debería devolver false.
+
+* ShellSteps::week_stats
+En los week_stats en general hay que verificar que funciona bien la parte en la que posicionamos el iterator en la posición adecuada: año y mes.

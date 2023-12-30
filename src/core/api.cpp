@@ -1,37 +1,32 @@
-#include <chrono>
-#include <cstdlib>
-#include <rapidjson/document.h>
-#include <httplib/httplib.h>
-
 #include "api.h"
 
 namespace fitgalgo
 {
 
-DateIdx::DateIdx(const std::string& value, const bool& with_hour)
+DateIdx::DateIdx(const std::string& value)
 {
-    if (with_hour && is_iso8600_with_hour(value))
-    {
-	this->date = value.substr(0, 19);
-    }
-    else if (is_long_date(value))
-    {
-	this->date = value.substr(0, 10);
-    }
-    else if (is_short_date(value))
-    {
-	this->date = value.substr(0, 4) + "-" +
-	    value.substr(4, 2) + "-" + value.substr(6, 2);
-    }
-    else
-    {
-	this->date = {};
-    }
+    if (value.size() < 10)
+	return;
+
+    if (value.size() >= 19)
+	this->set_datetime_if_valid_value(value.substr(0, 19), "%Y-%m-%dT%H:%M:%S");
+
+    if (this->datetime.empty())
+	this->set_datetime_if_valid_value(value.substr(0, 10) + "T00:00:00", "%Y-%m-%d");
+}
+
+void DateIdx::set_datetime_if_valid_value(const std::string& value, const std::string& format)
+{
+    std::tm tm_struct{};
+    std::istringstream iss(value);
+    iss >> std::get_time(&tm_struct, format.c_str());
+    if (!iss.fail())
+	this->datetime = value;
 }
 
 std::chrono::year_month_day DateIdx::ymd() const
 {
-    std::istringstream ss(this->date);
+    std::istringstream ss(this->datetime);
 
     int year, month, day;
     char dash1, dash2;
@@ -48,7 +43,32 @@ inline void DateIdx::decrement_date()
     oss << std::setw(4) << std::setfill('0') << static_cast<int>(yesterday.year())
         << '-' << std::setw(2) << std::setfill('0') << static_cast<unsigned>(yesterday.month())
 	<< '-' << std::setw(2) << std::setfill('0') << static_cast<unsigned>(yesterday.day());
-    this->date = oss.str();
+    this->datetime = oss.str();
+}
+
+const std::string &DateIdx::value() const
+{
+    return this->datetime;
+}
+
+std::string DateIdx::year() const
+{
+    return is_valid() ? datetime.substr(0, 4) : "";
+}
+
+std::string DateIdx::month() const
+{
+    return is_valid() ? datetime.substr(5, 2) : "";
+}
+
+std::string DateIdx::day() const
+{
+    return is_valid() ? datetime.substr(8, 2) : "";
+}
+
+bool DateIdx::is_valid() const
+{
+    return !this->datetime.empty();
 }
 
 DateIdx& DateIdx::operator--()
@@ -63,53 +83,9 @@ DateIdx& DateIdx::operator--(int)
     return *this;
 }
 
-inline bool DateIdx::is_iso8600_with_hour(const std::string& value)
-{
-    if (value.length() < 19)
-	return false;
-
-    std::string date = value.substr(0, 10);
-    std::string format{"%Y-%m-%dT%H:%M:%S"};
-    std::tm tm_struct = {};
-    std::istringstream ss(date);
-    ss >> std::get_time(&tm_struct, format.c_str());
-    return !ss.fail();
-}
-
-inline bool DateIdx::is_long_date(const std::string& value)
-{
-    if (value.length() < 10)
-	return false;
-
-    std::string date = value.substr(0, 10);
-    std::string format{"%Y-%m-%d"};
-    std::tm tm_struct = {};
-    std::istringstream ss(date);
-    ss >> std::get_time(&tm_struct, format.c_str());
-    return !ss.fail();
-}
-
-inline bool DateIdx::is_short_date(const std::string& value)
-{
-    if (value.length() < 8)
-	return false;
-
-    std::string date = value.substr(0, 8);
-    std::string format{"%Y%m%d"};
-    std::tm tm_struct = {};
-    std::istringstream ss(date);
-    ss >> std::get_time(&tm_struct, format.c_str());
-    return !ss.fail();
-}
-
-inline bool DateIdx::is_valid(const std::string& value)
-{
-    return is_long_date(value) || is_short_date(value);
-}
-
 bool operator<(const DateIdx& l, const DateIdx& r)
 {
-    return l.date < r.date;
+    return l.datetime < r.datetime;
 }
 
 bool LoginData::load(const rapidjson::Document& document)
@@ -207,9 +183,8 @@ bool StepsData::load(const rapidjson::Document& document)
 
     for (const auto& v : data->value.GetArray())
     {
-	if (v.IsObject() &&
-	    v.HasMember("datetime_local") &&
-	    DateIdx::is_valid(v["datetime_local"].GetString()))
+	DateIdx idx{v["datetime_local"].GetString()};
+	if (v.IsObject() && v.HasMember("datetime_local") && idx.is_valid())
 	{
 	    auto itr_dt_utc = v.FindMember("datetime_utc");
 	    auto itr_dt_local = v.FindMember("datetime_local");
@@ -233,7 +208,7 @@ bool StepsData::load(const rapidjson::Document& document)
 	    if (itr_calories != v.MemberEnd() && itr_calories->value.IsInt())
 		item.calories = itr_calories->value.GetInt();
 
-	    this->steps[DateIdx(item.datetime_local, false)] = item;
+	    this->steps[idx] = item;
 	}
 	else
 	{
@@ -452,11 +427,10 @@ bool SleepData::load(const rapidjson::Document& document)
 		}
 	    }
 
-	    if (sleep_item.dates.size() == 2 && DateIdx::is_valid(sleep_item.dates[1]))
-	    {
-		auto idx = DateIdx(sleep_item.dates[0], true);
-		this->sleep[idx] = sleep_item;
-	    }
+	    auto idx1 = sleep_item.dates.size() == 2 ? DateIdx(sleep_item.dates[0]) : DateIdx();
+	    auto idx2 = sleep_item.dates.size() == 2 ? DateIdx(sleep_item.dates[1]) : DateIdx();
+	    if (idx1.is_valid() && idx2.is_valid())
+		this->sleep[idx1] = sleep_item;
 	    else
 		this->errors.emplace_back("JSON error: dates are no valid or are not dates.");
 	}
@@ -482,8 +456,8 @@ Activity& Activity::operator+=(const Activity& rhs)
 	this->sport = rhs.sport;
     if (this->sub_sport.empty())
 	this->sub_sport = rhs.sub_sport;
-    this->start_position = rhs.start_position;
-    this->end_position = rhs.end_position;
+    this->start_lat_lon = rhs.start_lat_lon;
+    this->end_lat_lon = rhs.end_lat_lon;
     if (this->start_time_utc.empty())
 	this->start_time_utc = rhs.start_time_utc;
     this->total_elapsed_time += rhs.total_elapsed_time;
@@ -604,17 +578,11 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 
 		if (itr_splat != itr_session->value.MemberEnd() && itr_splat->value.IsNumber() &&
 		    itr_splon != itr_session->value.MemberEnd() && itr_splon->value.IsNumber())
-		{
-		    activity.start_position.lat = itr_splat->value.GetFloat();
-		    activity.start_position.lon = itr_splon->value.GetFloat();
-		}
+		    activity.start_lat_lon = {itr_splat->value.GetFloat(), itr_splon->value.GetFloat()};
 
 		if (itr_eplat != itr_session->value.MemberEnd() && itr_eplat->value.IsNumber() &&
 		    itr_eplon != itr_session->value.MemberEnd() && itr_eplon->value.IsNumber())
-		{
-		    activity.end_position.lat = itr_eplat->value.GetFloat();
-		    activity.end_position.lon = itr_eplon->value.GetFloat();
-		}
+		    activity.end_lat_lon = {itr_eplat->value.GetFloat(), itr_eplon->value.GetFloat()};
 
 		if (itr_st != itr_session->value.MemberEnd() && itr_st->value.IsString())
 		    activity.start_time_utc = itr_st->value.GetString();
@@ -690,8 +658,9 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 		    activity.total_anaerobic_training_effect = itr_tate->value.GetFloat();
 	    }
 
-	    if (!activity.start_time_utc.empty() && DateIdx::is_valid(activity.start_time_utc))
-		this->activities[DateIdx(activity.start_time_utc, true)] = activity;
+	    DateIdx idx{activity.start_time_utc};
+	    if (!activity.start_time_utc.empty() && idx.is_valid())
+		this->activities[idx] = activity;
 	    else
 		this->errors.emplace_back("JSON error: start time is not a valid date.");
 	}

@@ -2,7 +2,6 @@
 #define _ES_RGMF_UI_SHELL_H 1
 
 #include "../core/api.h"
-#include "../core/stats.h"
 
 namespace fitgalgo
 {
@@ -10,7 +9,7 @@ namespace fitgalgo
 class ShellSteps
 {
 private:
-    Stats<Steps> stats;
+    StepsData data;
 
     void year_stats() const;
     void month_stats(const ushort& year) const;
@@ -18,14 +17,14 @@ private:
 
 public:
     explicit ShellSteps(const StepsData& steps_data)
-	: stats(Stats<Steps>(steps_data.steps)) {}
+	: data(steps_data) {}
     void loop() const;
 };
 
 class ShellSleep
 {
 private:
-    Stats<Sleep> stats;
+    SleepData data;
 
     void year_stats() const;
     void month_stats(const ushort& year) const;
@@ -33,14 +32,14 @@ private:
     
 public:
     explicit ShellSleep(const SleepData& sleep_data)
-	: stats(Stats<Sleep>(sleep_data.sleep)) {}
+	: data(sleep_data) {}
     void loop() const;
 };
 
 class ShellActivities
 {
 private:
-    Stats<Activity> stats;
+    ActivitiesData data;
 
     void dashboard() const;
     void month_stats(const ushort& year) const;
@@ -48,7 +47,7 @@ private:
 
 public:
     explicit ShellActivities(const ActivitiesData& activities_data)
-	: stats(Stats<Activity>(activities_data.activities)) {}
+	: data(activities_data) {}
     void loop() const;
 };
 

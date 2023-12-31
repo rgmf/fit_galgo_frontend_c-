@@ -159,23 +159,28 @@ int main(int argc, char* argv[])
 		} while (!std::filesystem::exists(path));
 
 		auto results = conn.post_file(path);
+		unsigned short total = 0;
 		unsigned short accepted = 0;
 		for (auto& result : results)
 		{
 		    if (result.is_valid())
 		    {
 			const auto& ufd = result.get_data();
-			std::cout << "File: " << ufd.file_path
-				  << " | accepted: " << ufd.accepted
-				  << std::endl;
-			if (!ufd.errors.empty())
-			    std::cout << "Errors:" << std::endl;
-			else
-			    accepted++;
-
-			for (auto& error : ufd.errors)
+			for (const auto& uf : ufd.uploaded_files)
 			{
-			    std::cout << error << std::endl;
+			    total++;
+			    std::cout << "File: " << uf.filename
+				      << " | accepted: " << uf.accepted
+				      << std::endl;
+			    if (!uf.errors.empty())
+				std::cout << "Errors:" << std::endl;
+			    else
+				accepted++;
+
+			    for (auto& error : uf.errors)
+			    {
+				std::cout << error << std::endl;
+			    }
 			}
 		    }
 		    else
@@ -183,7 +188,7 @@ int main(int argc, char* argv[])
 			std::cerr << result.get_error().error_to_string() << std::endl;
 		    }
 		}
-		std::cout << std::endl << "TOTAL: " << results.size() << std::endl;
+		std::cout << std::endl << "TOTAL: " << total << std::endl;
 		std::cout << "ACCEPTED: " << accepted << std::endl << std::endl;
 	    }
 	    catch (std::filesystem::filesystem_error& error)

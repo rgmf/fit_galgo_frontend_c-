@@ -114,41 +114,43 @@ bool UploadedFileData::load(const rapidjson::Document& document)
 	return false;
     }
 
-    const auto itr = data->value.GetArray().Begin();
-    const auto id = itr->FindMember("id");
-    const auto file_path = itr->FindMember("file_path");
-    const auto accepted = itr->FindMember("accepted");
-    const auto zip_file_path = itr->FindMember("zip_file_path");
-    const auto errors = itr->FindMember("errors");
-
-    if (id != itr->MemberEnd() && id->value.IsString())
+    std::vector<UploadedFile> files{};
+    
+    for (const auto& v : data->value.GetArray())
     {
-	this->id = id->value.GetString();
-    }
-
-    if (file_path != itr->MemberEnd() && file_path->value.IsString())
-    {
-	this->file_path = file_path->value.GetString();
-    }
-
-    if (accepted != itr->MemberEnd() && accepted->value.IsBool())
-    {
-	this->accepted = accepted->value.GetBool();
-    }
-
-    if (zip_file_path != itr->MemberEnd() && zip_file_path->value.IsString())
-    {
-	this->zip_file_path = zip_file_path->value.GetString();
-    }
-
-    if (errors != itr->MemberEnd() && errors->value.IsArray())
-    {
-	for (const auto& v : errors->value.GetArray())
+	if (v.IsObject())
 	{
-	    if (v.IsString())
-	    {
-		this->errors.emplace_back(v.GetString());
-	    }
+	    UploadedFile file{};
+
+	    const auto id = v.FindMember("id");
+	    const auto filename = v.FindMember("filename");
+	    const auto accepted = v.FindMember("accepted");
+	    const auto zip_filename = v.FindMember("zip_filename");
+	    const auto errors = v.FindMember("errors");
+
+	    if (id != v.MemberEnd() && id->value.IsString())
+		file.id = id->value.GetString();
+
+	    if (filename != v.MemberEnd() && filename->value.IsString())
+		file.filename = filename->value.GetString();
+
+	    if (accepted != v.MemberEnd() && accepted->value.IsBool())
+		file.accepted = accepted->value.GetBool();
+
+	    if (zip_filename != v.MemberEnd() && zip_filename->value.IsString())
+		file.zip_filename = zip_filename->value.GetString();
+
+	    if (errors != v.MemberEnd() && errors->value.IsArray())
+		for (const auto& v : errors->value.GetArray())
+		    if (v.IsString())
+			file.errors.emplace_back(v.GetString());
+
+	    this->uploaded_files.emplace_back(file);
+	}
+	else
+	{
+	    this->errors.emplace_back(
+		"JSON error: it expects an object with file uploaded information.");
 	}
     }
 
@@ -822,9 +824,11 @@ const Result<UploadedFileData> Connection::do_post_for_file(
     }
     catch (const std::exception& e)
     {
+	UploadedFile uf;
+	uf.filename = path.string();
+	uf.accepted = false;
 	UploadedFileData ufd;
-	ufd.file_path = path.string();
-	ufd.accepted = false;
+	ufd.uploaded_files.emplace_back(uf);
 	ufd.errors = {e.what()};
 
         Result<UploadedFileData> result;

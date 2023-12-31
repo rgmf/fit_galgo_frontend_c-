@@ -68,13 +68,19 @@ struct LoginData : public Data
     bool load(const rapidjson::Document& document) override;
 };
 
-struct UploadedFileData : public Data
+struct UploadedFile
 {
     std::string id;
-    std::string file_path;
+    std::string filename;
     bool accepted;
     std::vector<std::string> errors;
-    std::string zip_file_path;
+    std::string zip_filename;
+};
+    
+struct UploadedFileData : public Data
+{
+    std::vector<UploadedFile> uploaded_files{};
+    std::vector<std::string> errors{};
 
     bool load(const rapidjson::Document& document) override;
 };

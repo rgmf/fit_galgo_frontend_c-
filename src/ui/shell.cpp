@@ -1,11 +1,18 @@
 #include <chrono>
 #include <cstddef>
+#include <cstdio>
 #include <format>
+#include <functional>
 #include <numeric>
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <filesystem>
 
+#include <unistd.h>
+#include <termios.h>
+
+#include "../core/api.h"
 #include "shell.h"
 #include "calendar.h"
 
@@ -15,6 +22,53 @@ using std::endl;
 
 namespace fitgalgo
 {
+
+char get_char()
+{
+    // Terminal to raw mode ON
+    system("stty raw");
+    char c = getchar();
+    system("stty cooked");
+    // Terminal to row mode OFF
+    return c;
+}
+
+inline void disable_echo()
+{
+    struct termios tty;
+    tcgetattr(STDIN_FILENO, &tty);
+    tty.c_lflag &= ~ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+}
+
+inline void enable_echo()
+{
+    struct termios tty;
+    tcgetattr(STDIN_FILENO, &tty);
+    tty.c_lflag |= ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+}
+
+void keyboard_handled(
+    std::function<void(const ushort&, const ushort&)> callback,
+    ushort first,
+    ushort second,
+    ushort min,
+    ushort max)
+{
+    char c{};
+
+    do
+    {
+	callback(first, second);
+	c = get_char();
+	switch (c)
+	{
+	case 'n': second < max && second >= min ? second++ : second; break;
+	case 'p': second <= max && second > min ? second-- : second; break;
+	}
+    } while (c != 'q');
+}
 
 inline ushort ask_for_year()
 {
@@ -65,6 +119,225 @@ std::string formatted_number(const T& n)
     return res;
 }
 
+inline bool Shell::login()
+{
+    Result<LoginData> login_result;
+    std::string username;
+    std::string password;
+ 
+    system("clear");
+    cout << "You need to login to Fit Galgo API" << endl;
+    cout << endl << "Username: ";
+    std::cin >> username;
+    cout << "Password: ";
+    disable_echo();
+    std::cin >> password;
+    enable_echo();
+    cout << endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    login_result = this->connection.login(username, password);
+    if (login_result.is_valid())
+    {
+	cout << "Login okay" << endl;
+	return true;
+    }
+    else
+    {
+	std::cerr << "Login error" << endl;
+	std::cerr << login_result.get_error().error_to_string() << endl;
+	return false;
+    }
+}
+
+inline void Shell::upload_path() const
+{
+    system("clear");
+    try
+    {
+	std::filesystem::path path;
+	do
+	{
+	    cout << endl << "File path: ";
+	    std::cin >> path;
+	    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	} while (!std::filesystem::exists(path));
+
+	auto results = this->connection.post_file(path);
+	unsigned short total = 0;
+	unsigned short accepted = 0;
+	for (auto& result : results)
+	{
+	    if (result.is_valid())
+	    {
+		const auto& ufd = result.get_data();
+		for (const auto& uf : ufd.uploaded_files)
+		{
+		    total++;
+		    cout << "File: " << uf.filename
+			    << " | accepted: " << uf.accepted
+			    << endl;
+		    if (!uf.errors.empty())
+			cout << "Errors:" << endl;
+		    else
+			accepted++;
+
+		    for (auto& error : uf.errors)
+		    {
+			cout << error << endl;
+		    }
+		}
+	    }
+	    else
+	    {
+		std::cerr << result.get_error().error_to_string() << endl;
+	    }
+	}
+	cout << endl << "TOTAL: " << total << endl;
+	cout << "ACCEPTED: " << accepted << endl << endl;
+    }
+    catch (std::filesystem::filesystem_error& error)
+    {
+	std::cerr << "EXCEPTION: " << error.what() << endl;
+	cout << "Try again..." << endl;
+    }
+
+    cout << endl << "Press Enter to continue...";
+    std::cin.get();
+}
+
+inline void Shell::steps() const
+{
+    try
+    {
+	auto result = this->connection.get_steps();
+	if (result.is_valid())
+	{
+	    auto ui = fitgalgo::ShellSteps(result.get_data());
+	    ui.loop();
+	}
+	else
+	{
+	    std::cerr << result.get_error().error_to_string() << endl;
+	    cout << endl << "Press Enter to continue...";
+	    std::cin.get();
+	}
+    }
+    catch (const std::exception& e) {
+	std::cerr << "Error: " << e.what() << endl;
+	cout << endl << "Press Enter to continue...";
+	std::cin.get();
+    }
+}
+
+inline void Shell::sleep() const
+{
+    try
+    {
+	auto result = this->connection.get_sleep();
+	if (result.is_valid())
+	{
+	    auto ui = fitgalgo::ShellSleep(result.get_data());
+	    ui.loop();
+	}
+	else
+	{
+	    std::cerr << result.get_error().error_to_string() << endl;
+	    cout << endl << "Press Enter to continue...";
+	    std::cin.get();
+	}
+    }
+    catch (const std::exception& e) {
+	std::cerr << "Error: " << e.what() << endl;
+	cout << endl << "Press Enter to continue...";
+	std::cin.get();
+    }
+}
+
+inline void Shell::activities() const
+{
+    try
+    {
+	auto result = this->connection.get_activities();
+	if (result.is_valid())
+	{
+	    auto ui = fitgalgo::ShellActivities(result.get_data());
+	    ui.loop();
+	}
+	else
+	{
+	    std::cerr << result.get_error().error_to_string() << endl;
+	    cout << endl << "Press Enter to continue...";
+	    std::cin.get();
+	}
+    }
+    catch (const std::exception& e) {
+	std::cerr << "Error: " << e.what() << endl;
+	cout << endl << "Press Enter to continue...";
+	std::cin.get();
+    }
+}
+
+void Shell::loop()
+{
+    char option{};
+
+    do
+    {
+	system("clear");
+	cout << "MENU" << endl;
+	cout << "-------------------------------------------" << endl;
+	if (!this->connection.has_token())
+	{
+	    option = '0';
+	}
+	else
+	{
+	    cout << "1 - Logout" << endl;
+	    cout << "2 - Upload file" << endl;
+	    cout << "3 - Steps" << endl;
+	    cout << "4 - Sleep" << endl;
+	    cout << "5 - Activities" << endl;
+	    cout << "q - Exit" << endl;
+	    cout << "Select an option: ";
+
+	    option = get_char();
+	}
+
+	switch (option)
+	{
+	case '0':
+	    if (!this->login())
+	    {
+		std::cout << "Press 'q' to exit or 'enter' to continue...";
+		option = get_char();
+	    }
+	    break;
+	case '1':
+	    this->connection.logout();
+	    break;
+	case '2':
+	    this->upload_path();
+	    break;
+	case '3':
+	    this->steps();
+	    break;
+	case '4':
+	    this->sleep();
+	    break;
+	case '5':
+	    this->activities();
+	    break;
+	case 'q':
+	    system("clear");
+	    cout << "Are you sure you want to exit from the application [s/n]: ";
+	    option = get_char();
+	    option = option == 's' || option == 'S' ? 'q' : 'n';
+	    break;
+	}
+    } while (option != 'q');
+
+}
+
 inline void print_steps_stats(const std::string& h, const Steps& s)
 {
     cout << h << endl;
@@ -82,40 +355,42 @@ inline void print_steps_stats(const std::string& h, const Steps& s)
 
 void ShellSteps::loop() const
 {
-    ushort option;
+    char option;
 
     do {
 	system("clear");
 	cout << "STEPS STATS" << endl;
 	cout << "-------------------------------------------" << endl;
-	cout << "1.- Yearly stats" << endl;
-	cout << "2.- Stats for a year" << endl;
-	cout << "3.- Stats for a year/month" << endl;
-	cout << "4.- Stats for a year/month/week" << endl;
-	cout << "0.- Exit" << endl;
+	cout << "1 - Yearly stats" << endl;
+	cout << "2 - Stats for a year" << endl;
+	cout << "3 - Stats for a year/month" << endl;
+	cout << "4 - Stats for a year/month/week" << endl;
+	cout << "q - Exit" << endl;
 	cout << "Select an option: ";
-	cin >> option;
-	cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
+	option = get_char();
+	
 	switch (option)
 	{
-	case 1:
+	case '1':
 	    this->year_stats();
 	    cout << endl << "Press Enter to continue...";
 	    cin.get();
 	    break;
-	case 2:
-	    this->month_stats(ask_for_year());
-	    cout << endl << "Press Enter to continue...";
-	    cin.get();
+	case '2':
+	    cout << endl;
+	    keyboard_handled([this](const ushort& year, const ushort& month) {
+		this->month_stats(year, month);
+	    }, ask_for_year(), 1, 1, 12);
 	    break;
-	case 3:
-	    this->week_stats(ask_for_year(), ask_for_month());
-	    cout << endl << endl << "Press Enter to continue...";
-	    cin.get();
+	case '3':
+	    cout << endl;
+	    keyboard_handled([this](const ushort& year, const ushort& month) {
+		this->week_stats(year, month);
+	    }, ask_for_year(), ask_for_month(), 1, 12);
 	    break;
 	}
-    } while (option != 0);
+    } while (option != 'q');
 }
 
 void ShellSteps::year_stats() const
@@ -130,7 +405,7 @@ void ShellSteps::year_stats() const
 	return;
     }
 
-    std::string current_year = this->data.steps.begin()->first.year();
+    short current_year = this->data.steps.begin()->first.year();
     Steps all_steps{};
     for (const auto& [idx, steps] : this->data.steps)
     {
@@ -146,40 +421,32 @@ void ShellSteps::year_stats() const
     print_steps_stats(std::format("Year {}", current_year), all_steps);
 }
 
-void ShellSteps::month_stats(const ushort& year) const
+void ShellSteps::month_stats(const ushort& year, const ushort& month) const
 {
     system("clear");
-    cout << "MONTHLY STEPS STATS FOR YEAR " << year << endl;
+    cout << "MONTHLY STEPS STATS FOR " << year << ", " << MONTHS_NAMES[month - 1] << endl;
     cout << "=====================================================" << endl;
-
-    const auto year_str = std::to_string(year);
 
     auto itr = std::find_if(
 	this->data.steps.cbegin(),
 	this->data.steps.cend(),
-	[year_str](const auto& item) { return item.first.year() == year_str; });
-
+	[year, month](const auto& item) {
+	    return item.first.year() == year && item.first.month() == month;
+	});
     if (itr == this->data.steps.end())
     {
-	cout << "There are not data for this year" << endl;
+	cout << "There are not data for this date" << endl;
 	return;
     }
 
-    std::string current_month = itr->first.month();
     Steps all_steps{};
-    while (itr != this->data.steps.end() && itr->first.year() == year_str)
+    while (itr != this->data.steps.end() && (itr->first.year() == year && itr->first.month() == month))
     {
-	if (current_month != itr->first.month())
-	{
-	    print_steps_stats(MONTHS_NAMES[std::atoi(current_month.c_str()) - 1], all_steps);
-	    current_month = itr->first.month();
-	    all_steps = Steps{};
-	}
 	all_steps += itr->second;
 	itr++;
     }
 
-    print_steps_stats(MONTHS_NAMES[std::atoi(current_month.c_str()) - 1], all_steps);
+    print_steps_stats(MONTHS_NAMES[month - 1], all_steps);
 }
 
 void ShellSteps::week_stats(const ushort& year, const ushort& month) const
@@ -192,21 +459,19 @@ void ShellSteps::week_stats(const ushort& year, const ushort& month) const
     auto first_wd_ymd = calendar.get_first_wd_ymd();
     auto last_wd_ymd = calendar.get_last_wd_ymd();
 
-    auto year_str = std::to_string(year);
-    auto month_str = std::to_string(month);
     auto itr = std::find_if(
 	this->data.steps.cbegin(),
 	this->data.steps.cend(),
-	[year_str, month_str, first_wd_ymd](const auto& item) {
+	[year, month, first_wd_ymd](const auto& item) {
 	    return item.first.ymd() == first_wd_ymd ||
-		(item.first.year() == year_str && item.first.month() == month_str);
+		(item.first.year() == year && item.first.month() == month);
 	});
     if (itr == this->data.steps.end())
     {
      	cout << "There are not data for this date " << endl;
      	return;
     }
-
+    
     while (itr != this->data.steps.end() && itr->first.ymd() <= last_wd_ymd)
     {
 	std::string s1 = std::to_string(itr->second.steps) + " steps";
@@ -258,40 +523,42 @@ inline void print_sleep_stats(const std::string& h, const Sleep& s, const size_t
 
 void ShellSleep::loop() const
 {
-    ushort option;
+    char option;
 
     do {
 	system("clear");
 	cout << "SLEEP STATS" << endl;
 	cout << "-------------------------------------------" << endl;
-	cout << "1.- Yearly stats" << endl;
-	cout << "2.- Stats for a year" << endl;
-	cout << "3.- Stats for a year/month" << endl;
-	cout << "4.- Stats for a year/month/week" << endl;
-	cout << "0.- Exit" << endl;
+	cout << "1 - Yearly stats" << endl;
+	cout << "2 - Stats for a year" << endl;
+	cout << "3 - Stats for a year/month" << endl;
+	cout << "4 - Stats for a year/month/week" << endl;
+	cout << "q - Exit" << endl;
 	cout << "Select an option: ";
-	cin >> option;
-	cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+	option = get_char();
 
 	switch (option)
 	{
-	case 1:
+	case '1':
 	    this->year_stats();
 	    cout << endl << "Press Enter to continue...";
 	    cin.get();
 	    break;
-	case 2:
-	    this->month_stats(ask_for_year());
-	    cout << endl << "Press Enter to continue...";
-	    cin.get();
+	case '2':
+	    cout << endl;
+	    keyboard_handled([this](const ushort& year, const ushort& month) {
+		this->month_stats(year, month);
+	    }, ask_for_year(), ask_for_month(), 1, 12);
 	    break;
-	case 3:
-	    this->week_stats(ask_for_year(), ask_for_month());
-	    cout << endl << endl << "Press Enter to continue...";
-	    cin.get();
+	case '3':
+	    cout << endl;
+	    keyboard_handled([this](const ushort& year, const ushort& month) {
+		this->week_stats(year, month);
+	    }, ask_for_year(), ask_for_month(), 1, 12);
 	    break;
 	}
-    } while (option != 0);
+    } while (option != 'q');
 }
 
 void ShellSleep::year_stats() const
@@ -306,7 +573,7 @@ void ShellSleep::year_stats() const
 	return;
     }
 
-    std::string current_year = this->data.sleep.begin()->first.year();
+    short current_year = this->data.sleep.begin()->first.year();
     SleepWithCount swc{};
     for (const auto& [idx, sleep] : this->data.sleep)
     {
@@ -322,39 +589,32 @@ void ShellSleep::year_stats() const
     print_sleep_stats(std::format("Year {}", current_year), swc.sleep, swc.count);
 }
 
-void ShellSleep::month_stats(const ushort& year) const
+void ShellSleep::month_stats(const ushort& year, const ushort& month) const
 {
     system("clear");
-    cout << "MONTHLY SLEEP STATS FOR YEAR " << year << endl;
+    cout << "MONTHLY SLEEP STATS " << year << ", " << MONTHS_NAMES[month - 1] << endl;
     cout << "=====================================================" << endl;
-
-    const auto year_str = std::to_string(year);
 
     auto itr = std::find_if(
 	this->data.sleep.cbegin(),
 	this->data.sleep.cend(),
-	[year_str](const auto& item) { return item.first.year() == year_str; });
+	[year, month](const auto& item) {
+	    return item.first.year() == year && item.first.month() == month;
+	});
     if (itr == this->data.sleep.end())
     {
 	cout << "There are not data for this year" << endl;
 	return;
     }
 
-    std::string current_month = itr->first.month();
     SleepWithCount swc{};
-    while (itr != this->data.sleep.end() && itr->first.year() == year_str)
+    while (itr != this->data.sleep.end() && (itr->first.year() == year && itr->first.month() == month))
     {
-	if (current_month != itr->first.month())
-	{
-	    print_sleep_stats(MONTHS_NAMES[std::atoi(current_month.c_str()) - 1], swc.sleep, swc.count);
-	    current_month = itr->first.month();
-	    swc = SleepWithCount{};
-	}
 	swc = SleepWithCount{swc.sleep + itr->second, swc.count + 1};
 	itr++;
     }
 
-    print_sleep_stats(MONTHS_NAMES[std::atoi(current_month.c_str()) - 1], swc.sleep, swc.count);
+    print_sleep_stats(MONTHS_NAMES[month - 1], swc.sleep, swc.count);
 }
 
 void ShellSleep::week_stats(const ushort& year, const ushort& month) const
@@ -367,14 +627,12 @@ void ShellSleep::week_stats(const ushort& year, const ushort& month) const
     auto first_wd_ymd = calendar.get_first_wd_ymd();
     auto last_wd_ymd = calendar.get_last_wd_ymd();
 
-    auto year_str = std::to_string(year);
-    auto month_str = std::to_string(month);
     auto itr = std::find_if(
 	this->data.sleep.cbegin(),
 	this->data.sleep.cend(),
-	[year_str, month_str, first_wd_ymd](const auto& item) {
+	[year, month, first_wd_ymd](const auto& item) {
 	    return item.first.ymd() == first_wd_ymd ||
-		(item.first.year() == year_str && item.first.month() == month_str);
+		(item.first.year() == year && item.first.month() == month);
 	});
     if (itr == this->data.sleep.end())
     {
@@ -457,40 +715,42 @@ inline void print_activities_stats(const std::string& h, const std::map<std::str
 
 void ShellActivities::loop() const
 {
-    ushort option;
-
+    char option;
+    
     do {
 	system("clear");
 	cout << "ACTIVITIES STATS" << endl;
 	cout << "-------------------------------------------" << endl;
-	cout << "1.- Dashboard" << endl;
-	cout << "2.- Stats for a year" << endl;
-	cout << "3.- Stats for a year/month" << endl;
-	cout << "4.- Stats for a year/month/week" << endl;
-	cout << "0.- Exit" << endl;
+	cout << "1 - Dashboard" << endl;
+	cout << "2 - Stats for a year" << endl;
+	cout << "3 - Stats for a year/month" << endl;
+	cout << "4 - Stats for a year/month/week" << endl;
+	cout << "q - Exit" << endl;
 	cout << "Select an option: ";
-	cin >> option;
-	cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+	option = get_char();
 
 	switch (option)
 	{
-	case 1:
+	case '1':
 	    this->dashboard();
 	    cout << endl << "Press Enter to continue...";
 	    cin.get();
 	    break;
-	case 2:
-	    this->month_stats(ask_for_year());
-	    cout << endl << "Press Enter to continue...";
-	    cin.get();
+	case '2':
+	    cout << endl;
+	    keyboard_handled([this](const ushort& year, const ushort& month) {
+		this->month_stats(year, month);
+	    }, ask_for_year(), 1, 1, 12);
 	    break;
-	case 3:
-	    this->week_stats(ask_for_year(), ask_for_month());
-	    cout << endl << endl << "Press Enter to continue...";
-	    cin.get();
+	case '3':
+	    cout << endl;
+	    keyboard_handled([this](const ushort& year, const ushort& month) {
+		this->week_stats(year, month);
+	    }, ask_for_year(), ask_for_month(), 1, 12);
 	    break;
 	}
-    } while (option != 0);
+    } while (option != 'q');
 }
 
 inline void print_activities_stats(const std::string& header, const Activity& a)
@@ -511,7 +771,7 @@ void ShellActivities::dashboard() const
     }
 
     std::map<std::string, Activity> activities{};
-    std::string current_year = this->data.activities.begin()->first.year();
+    short current_year = this->data.activities.begin()->first.year();
     for (const auto& [idx, a] : this->data.activities)
     {
 	if (current_year != idx.year())
@@ -527,39 +787,32 @@ void ShellActivities::dashboard() const
     print_activities_stats(std::format("Year {}", current_year), activities);
 }
 
-void ShellActivities::month_stats(const ushort& year) const
+void ShellActivities::month_stats(const ushort& year, const ushort& month) const
 {
     system("clear");
-    cout << "MONTHLY ACTIVITIES STATS FOR YEAR " << year << endl;
+    cout << "MONTHLY ACTIVITIES STATS FOR " << year << ", " << MONTHS_NAMES[month - 1] << endl;
     cout << "=====================================================" << endl;
-
-    const auto year_str = std::to_string(year);
 
     auto itr = std::find_if(
 	this->data.activities.cbegin(),
 	this->data.activities.cend(),
-	[year_str](const auto& item) { return item.first.year() == year_str; });
+	[year, month](const auto& item) {
+	    return item.first.year() == year && item.first.month() == month;
+	});
     if (itr == this->data.activities.end())
     {
 	cout << "There are not data for this year" << endl;
 	return;
     }
 
-    std::string current_month = itr->first.month();
     std::map<std::string, Activity> activities{};
-    while (itr != this->data.activities.end() && itr->first.year() == year_str)
+    while (itr != this->data.activities.end() && (itr->first.year() == year && itr->first.month() == month))
     {
-	if (current_month != itr->first.month())
-	{
-	    print_activities_stats(MONTHS_NAMES[std::atoi(current_month.c_str()) - 1], activities);
-	    current_month = itr->first.month();
-	    activities = {};
-	}
 	activities[itr->second.sport] += itr->second;
 	itr++;
     }
 
-    print_activities_stats(MONTHS_NAMES[std::atoi(current_month.c_str()) - 1], activities);
+    print_activities_stats(MONTHS_NAMES[month - 1], activities);
 }
 
 void ShellActivities::week_stats(const ushort& year, const ushort& month) const
@@ -572,14 +825,12 @@ void ShellActivities::week_stats(const ushort& year, const ushort& month) const
     auto first_wd_ymd = calendar.get_first_wd_ymd();
     auto last_wd_ymd = calendar.get_last_wd_ymd();
 
-    auto year_str = std::to_string(year);
-    auto month_str = std::to_string(month);
     auto itr = std::find_if(
 	this->data.activities.cbegin(),
 	this->data.activities.cend(),
-	[year_str, month_str, first_wd_ymd](const auto& item) {
+	[year, month, first_wd_ymd](const auto& item) {
 	    return item.first.ymd() == first_wd_ymd ||
-		(item.first.year() == year_str && item.first.month() == month_str);
+		(item.first.year() == year && item.first.month() == month);
 	});
     if (itr == this->data.activities.end())
     {

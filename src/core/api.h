@@ -1,6 +1,8 @@
 #ifndef _ES_RGMF_CORE_API_H
 #define _ES_RGMF_CORE_API_H 1
 
+#include <memory>
+#include <sys/types.h>
 #include <chrono>
 #include <filesystem>
 #include <string>
@@ -51,9 +53,9 @@ public:
     explicit DateIdx(const std::string& value);
     const std::string& value() const;
     std::chrono::year_month_day ymd() const;
-    std::string year() const;
-    std::string month() const;
-    std::string day() const;
+    short year() const;
+    short month() const;
+    short day() const;
     bool is_valid() const;
     DateIdx& operator--(int);
     DateIdx& operator--();
@@ -62,19 +64,19 @@ public:
 
 struct LoginData : public Data
 {
-    std::string access_token;
-    std::string token_type;
+    std::string access_token{};
+    std::string token_type{};
 
     bool load(const rapidjson::Document& document) override;
 };
 
 struct UploadedFile
 {
-    std::string id;
-    std::string filename;
-    bool accepted;
-    std::vector<std::string> errors;
-    std::string zip_filename;
+    std::string id{};
+    std::string filename{};
+    bool accepted{};
+    std::vector<std::string> errors{};
+    std::string zip_filename{};
 };
     
 struct UploadedFileData : public Data
@@ -243,11 +245,18 @@ private:
     std::unique_ptr<T> data{};
 
 public:
+    explicit Result();
+    Result(const Result<T>& other);
+    Result(Result<T>&& other) noexcept;
+
+    Result<T>& operator=(const Result<T>& other);
+    Result<T>& operator=(const Result<T>&& other) noexcept;
+
     void load(const httplib::Result& response);
     void load(const T& newData);
     bool is_valid() const { return !this->error.has_error(); }
     const Error get_error() const { return error; }
-    const T& get_data() { return *this->data; }
+    const T& get_data() const { return *this->data; }
 };
 
 /**

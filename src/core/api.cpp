@@ -1,4 +1,5 @@
 #include "api.h"
+#include <memory>
 
 namespace fitgalgo
 {
@@ -51,19 +52,19 @@ const std::string &DateIdx::value() const
     return this->datetime;
 }
 
-std::string DateIdx::year() const
+short DateIdx::year() const
 {
-    return is_valid() ? datetime.substr(0, 4) : "";
+    return is_valid() ? static_cast<short>(std::atoi(datetime.substr(0, 4).c_str())) : -1;
 }
 
-std::string DateIdx::month() const
+short DateIdx::month() const
 {
-    return is_valid() ? datetime.substr(5, 2) : "";
+    return is_valid() ? static_cast<short>(std::atoi(datetime.substr(5, 2).c_str())) : -1;
 }
 
-std::string DateIdx::day() const
+short DateIdx::day() const
 {
-    return is_valid() ? datetime.substr(8, 2) : "";
+    return is_valid() ? static_cast<short>(std::atoi(datetime.substr(8, 2).c_str())) : -1;
 }
 
 bool DateIdx::is_valid() const
@@ -719,6 +720,54 @@ std::string Error::error_to_string() const
 }
 
 template <typename T>
+Result<T>::Result()
+{
+    error = Error();
+    status = {};
+    data = std::unique_ptr<T>();
+}
+
+template <typename T>
+Result<T>::Result(const Result<T>& other)
+{
+    error = other.error;
+    status = other.status;
+    data = std::make_unique<T>(*other.data);
+}
+
+template <typename T>
+Result<T>::Result(Result<T>&& other) noexcept
+{
+    error = std::move(other.error);
+    status = other.status;
+    data = std::move(other.data);
+}
+
+template <typename T>
+Result<T>& Result<T>::operator=(const Result<T>& other)
+{
+    if (this != &other)
+    {
+	error = other.error;
+	status = other.status;
+	data = other.data ? std::make_unique<T>(*other.data) : std::make_unique<T>();
+    }
+    return *this;
+}
+
+template <typename T>
+Result<T>& Result<T>::operator=(const Result<T>&& other) noexcept
+{
+    if (this != &other)
+    {
+	error = other.error;
+	status = other.status;
+	data = other.data ? std::make_unique<T>(*other.data) : std::make_unique<T>();
+    }
+    return *this;
+}
+
+template <typename T>
 void Result<T>::load(const httplib::Result &response)
 {   
     if (!response)
@@ -787,7 +836,7 @@ const Result<LoginData> Connection::login(
     auto response = client.Post(
 	"/auth/login", credentials.str(), "application/x-www-form-urlencoded");
 
-    Result<LoginData> result;
+    Result<LoginData> result{};
     result.load(response);
 
     if (result.is_valid())
@@ -899,5 +948,7 @@ const Result<ActivitiesData> Connection::get_activities() const
     result.load(response);
     return result;
 }
+
+template class Result<LoginData>;
 
 } // namespace fitgalgo

@@ -6,14 +6,32 @@
 namespace fitgalgo
 {
 
+class Shell
+{
+private:
+    Connection connection;
+
+    inline bool login();
+    inline void upload_path() const;
+    inline void steps() const;
+    inline void sleep() const;
+    inline void activities() const;
+
+public:
+    explicit Shell(const std::string& host, const ushort& port)
+	: connection(host, port) {}
+    void loop();
+};
+
 class ShellSteps
 {
 private:
     StepsData data;
 
     void year_stats() const;
-    void month_stats(const ushort& year) const;
+    void month_stats(const ushort& year, const ushort& month) const;
     void week_stats(const ushort& year, const ushort& month) const;
+    void test(const ushort& year, const ushort& month) const;
 
 public:
     explicit ShellSteps(const StepsData& steps_data)
@@ -27,7 +45,7 @@ private:
     SleepData data;
 
     void year_stats() const;
-    void month_stats(const ushort& year) const;
+    void month_stats(const ushort& year, const ushort &month) const;
     void week_stats(const ushort& year, const ushort& month) const;
     
 public:
@@ -42,7 +60,7 @@ private:
     ActivitiesData data;
 
     void dashboard() const;
-    void month_stats(const ushort& year) const;
+    void month_stats(const ushort& year, const ushort& month) const;
     void week_stats(const ushort& year, const ushort& month) const;
 
 public:

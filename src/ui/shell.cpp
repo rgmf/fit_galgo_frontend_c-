@@ -1,3 +1,4 @@
+#include <bits/chrono.h>
 #include <chrono>
 #include <cstddef>
 #include <cstdio>
@@ -51,22 +52,55 @@ inline void enable_echo()
 
 void keyboard_handled(
     std::function<void(const ushort&, const ushort&)> callback,
-    ushort first,
-    ushort second,
-    ushort min,
-    ushort max)
+    ushort year,
+    ushort month)
 {
     char c{};
+    std::string action{};
 
     do
     {
-	callback(first, second);
-	c = get_char();
-	switch (c)
+	if (action.empty())
 	{
-	case 'n': second < max && second >= min ? second++ : second; break;
-	case 'p': second <= max && second > min ? second-- : second; break;
+	    callback(year, month);
+	    cout << "\033[33m";
+	    cout << endl << endl;
+	    cout << "--------------------------------------------------" << endl;
+	    cout << "n -> next    p -> previous    q -> exit" << endl;
+	    cout << "    :<year> -> jump to the year" << endl;
+	    cout << "--------------------------------------------------" << endl;
+	    cout << "\033[0m";
 	}
+
+	c = get_char();
+
+	if (action.empty())
+	{
+	    switch (c)
+	    {
+	    case 'n': month < 12 && month >= 1 ? month++ : month; break;
+	    case 'p': month <= 12 && month > 1 ? month-- : month; break;
+	    case ':': action = ":"; break;
+	    }
+	}
+	else
+	{
+	    if (c == 27)
+	    {
+		action = {};
+	    }
+	    else if (c >= '0' && c <= '9')
+	    {
+		action += c;
+	    }
+	    else if (c == 13)
+	    {
+		int new_year = std::atoi(action.substr(1, action.length() - 1).c_str());
+		year = new_year > 0 ? new_year : year;
+		action = {};
+	    }
+	}
+
     } while (c != 'q');
 }
 
@@ -356,12 +390,14 @@ inline void print_steps_stats(const std::string& h, const Steps& s)
 void ShellSteps::loop() const
 {
     char option;
+    const std::chrono::time_point now{std::chrono::system_clock::now()};
+    const std::chrono::year_month_day ymd{std::chrono::floor<std::chrono::days>(now)};
 
     do {
 	system("clear");
 	cout << "STEPS STATS" << endl;
 	cout << "-------------------------------------------" << endl;
-	cout << "1 - Yearly stats" << endl;
+	cout << "1 - All aggregated stats" << endl;
 	cout << "2 - Stats for a year" << endl;
 	cout << "3 - Stats for a year/month" << endl;
 	cout << "4 - Stats for a year/month/week" << endl;
@@ -381,13 +417,13 @@ void ShellSteps::loop() const
 	    cout << endl;
 	    keyboard_handled([this](const ushort& year, const ushort& month) {
 		this->month_stats(year, month);
-	    }, ask_for_year(), 1, 1, 12);
+	    }, static_cast<int>(ymd.year()), static_cast<unsigned>(ymd.month()));
 	    break;
 	case '3':
 	    cout << endl;
 	    keyboard_handled([this](const ushort& year, const ushort& month) {
 		this->week_stats(year, month);
-	    }, ask_for_year(), ask_for_month(), 1, 12);
+	    }, static_cast<int>(ymd.year()), static_cast<unsigned>(ymd.month()));
 	    break;
 	}
     } while (option != 'q');
@@ -524,12 +560,14 @@ inline void print_sleep_stats(const std::string& h, const Sleep& s, const size_t
 void ShellSleep::loop() const
 {
     char option;
+    const std::chrono::time_point now{std::chrono::system_clock::now()};
+    const std::chrono::year_month_day ymd{std::chrono::floor<std::chrono::days>(now)};
 
     do {
 	system("clear");
 	cout << "SLEEP STATS" << endl;
 	cout << "-------------------------------------------" << endl;
-	cout << "1 - Yearly stats" << endl;
+	cout << "1 - All aggregated stats" << endl;
 	cout << "2 - Stats for a year" << endl;
 	cout << "3 - Stats for a year/month" << endl;
 	cout << "4 - Stats for a year/month/week" << endl;
@@ -549,13 +587,13 @@ void ShellSleep::loop() const
 	    cout << endl;
 	    keyboard_handled([this](const ushort& year, const ushort& month) {
 		this->month_stats(year, month);
-	    }, ask_for_year(), ask_for_month(), 1, 12);
+	    }, static_cast<int>(ymd.year()), static_cast<unsigned>(ymd.month()));
 	    break;
 	case '3':
 	    cout << endl;
 	    keyboard_handled([this](const ushort& year, const ushort& month) {
 		this->week_stats(year, month);
-	    }, ask_for_year(), ask_for_month(), 1, 12);
+	    }, static_cast<int>(ymd.year()), static_cast<unsigned>(ymd.month()));
 	    break;
 	}
     } while (option != 'q');
@@ -716,12 +754,14 @@ inline void print_activities_stats(const std::string& h, const std::map<std::str
 void ShellActivities::loop() const
 {
     char option;
+    const std::chrono::time_point now{std::chrono::system_clock::now()};
+    const std::chrono::year_month_day ymd{std::chrono::floor<std::chrono::days>(now)};
     
     do {
 	system("clear");
 	cout << "ACTIVITIES STATS" << endl;
 	cout << "-------------------------------------------" << endl;
-	cout << "1 - Dashboard" << endl;
+	cout << "1 - All aggregated stats" << endl;
 	cout << "2 - Stats for a year" << endl;
 	cout << "3 - Stats for a year/month" << endl;
 	cout << "4 - Stats for a year/month/week" << endl;
@@ -741,13 +781,13 @@ void ShellActivities::loop() const
 	    cout << endl;
 	    keyboard_handled([this](const ushort& year, const ushort& month) {
 		this->month_stats(year, month);
-	    }, ask_for_year(), 1, 1, 12);
+	    }, static_cast<int>(ymd.year()), static_cast<unsigned>(ymd.month()));
 	    break;
 	case '3':
 	    cout << endl;
 	    keyboard_handled([this](const ushort& year, const ushort& month) {
 		this->week_stats(year, month);
-	    }, ask_for_year(), ask_for_month(), 1, 12);
+	    }, static_cast<int>(ymd.year()), static_cast<unsigned>(ymd.month()));
 	    break;
 	}
     } while (option != 'q');

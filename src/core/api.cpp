@@ -447,64 +447,205 @@ bool SleepData::load(const rapidjson::Document& document)
     return true;
 }
 
-Activity& Activity::operator+=(const Activity& rhs)
+std::ostream& operator<<(std::ostream& os, ActivityType at)
 {
-    if (this->zone_info.empty())
-	this->zone_info = rhs.zone_info;
-    if (this->username.empty())
-	this->username = rhs.username;
-    if (this->sport_profile_name.empty())
-	this->sport_profile_name = rhs.sport_profile_name;
-    if (this->sport.empty())
-	this->sport = rhs.sport;
-    if (this->sub_sport.empty())
-	this->sub_sport = rhs.sub_sport;
-    this->start_lat_lon = rhs.start_lat_lon;
-    this->end_lat_lon = rhs.end_lat_lon;
-    if (this->start_time_utc.empty())
-	this->start_time_utc = rhs.start_time_utc;
-    this->total_elapsed_time += rhs.total_elapsed_time;
-    this->total_timer_time += rhs.total_timer_time;
-    this->total_distance += rhs.total_distance;
-    this->avg_speed = this->avg_speed > 0 ?
-	(this->avg_speed + rhs.avg_speed) / 2 : rhs.avg_speed;
-    this->max_speed = this->max_speed > rhs.max_speed ?
-	this->max_speed : rhs.max_speed;
-    this->avg_cadence = this->avg_cadence > 0 ?
-	(this->avg_cadence + rhs.avg_cadence) / 2 : rhs.avg_cadence;
-    this->max_cadence = this->max_cadence > rhs.max_cadence ?
-	this->max_cadence : rhs.max_cadence;
-    this->avg_running_cadence = this->avg_running_cadence > 0 ?
-	(this->avg_running_cadence + rhs.avg_running_cadence) / 2 : rhs.avg_running_cadence;
-    this->max_running_cadence = this->max_running_cadence > rhs.max_running_cadence ?
-	this->max_running_cadence : rhs.max_running_cadence;
-    this->total_strides += rhs.total_strides;
-    this->total_calories += rhs.total_calories;
-    this->total_ascent += rhs.total_ascent;
-    this->total_descent += rhs.total_descent;
-    this->avg_temperature = this->avg_temperature > 0 ?
-	(this->avg_temperature + rhs.avg_temperature) / 2 : rhs.avg_temperature;
-    this->max_temperature = this->max_temperature > rhs.max_temperature ?
-	this->max_temperature : rhs.max_temperature;
-    this->min_temperature = this->min_temperature < rhs.min_temperature ?
-	this->min_temperature : rhs.min_temperature;
-    this->avg_respiration_rate = this->avg_respiration_rate > 0 ?
-	(this->avg_respiration_rate + rhs.avg_respiration_rate) / 2 : rhs.avg_respiration_rate;
-    this->max_respiration_rate = this->max_respiration_rate > rhs.max_respiration_rate ?
-	this->max_respiration_rate : rhs.max_respiration_rate;
-    this->min_respiration_rate = this->min_respiration_rate < rhs.min_respiration_rate ?
-	this->min_respiration_rate : rhs.min_respiration_rate;
-    this->training_load_peak += rhs.training_load_peak;
-    this->total_training_effect += rhs.total_training_effect;
-    this->total_anaerobic_training_effect += rhs.total_anaerobic_training_effect;
-
-    return *this;
+    switch(at)
+    {
+    case ActivityType::GENERIC: os << "Generic"; break;
+    case ActivityType::DISTANCE: os << "Distance"; break;
+    case ActivityType::SPLITS: os << "Splits"; break;
+    case ActivityType::SETS: os << "Sets"; break;
+    default: os.setstate(std::ios_base::failbit);
+    }
+    return os;
 }
 
-Activity operator+(Activity lhs, const Activity& rhs)
+std::optional<float> acc_optional(const std::optional<float> &lhs,
+                                  const std::optional<float> &rhs)
 {
-    lhs += rhs;
-    return lhs;
+    return lhs.has_value() ? (rhs.has_value() ? std::optional<float>(lhs.value() + rhs.value()) : lhs) : rhs;
+}
+
+std::optional<float> avg_optional(const std::optional<float> &lhs,
+                                  const std::optional<float> &rhs)
+{
+    if (!lhs.has_value() || lhs.value() == 0)
+	return rhs;
+    if (!rhs.has_value() || rhs.value() == 0)
+	return lhs;
+    return std::optional<float>((lhs.value() + rhs.value()) / 2);
+}
+
+std::optional<float> max_optional(const std::optional<float> &lhs,
+                                  const std::optional<float> &rhs)
+{
+    if (!lhs.has_value())
+	return rhs;
+    if (!rhs.has_value())
+	return lhs;
+    return std::optional<float>(lhs.value() > rhs.value() ? lhs.value() : rhs.value());
+}
+
+std::optional<float> min_optional(const std::optional<float> &lhs,
+                                  const std::optional<float> &rhs)
+{
+    if (!lhs.has_value())
+	return rhs;
+    if (!rhs.has_value())
+	return lhs;
+    return std::optional<float>(lhs.value() < rhs.value() ? lhs.value() : rhs.value());
+}
+
+void Activity::merge(const std::unique_ptr<Activity>& a)
+{
+    if (this->zone_info.empty())
+	this->zone_info = a->zone_info;
+    if (this->username.empty())
+	this->username = a->username;
+    if (this->sport_profile_name.empty())
+	this->sport_profile_name = a->sport_profile_name;
+    if (this->sport.empty())
+	this->sport = a->sport;
+    if (this->sub_sport.empty())
+	this->sub_sport = a->sub_sport;
+    if (!this->start_lat_lon.has_value())
+	this->start_lat_lon = a->start_lat_lon;
+    if (a->end_lat_lon.has_value())
+	this->end_lat_lon = a->end_lat_lon;
+    if (this->start_time_utc.empty())
+	this->start_time_utc = a->start_time_utc;
+    this->total_elapsed_time = acc_optional(this->total_elapsed_time, a->total_elapsed_time);
+    this->total_timer_time = acc_optional(this->total_timer_time, a->total_timer_time);
+    this->total_distance = acc_optional(this->total_distance, a->total_distance);
+    this->avg_speed = avg_optional(this->avg_speed, a->avg_speed);
+    this->max_speed = max_optional(this->max_speed, a->max_speed);
+    this->avg_cadence = avg_optional(this->avg_cadence, a->avg_cadence);
+    this->max_cadence = max_optional(this->max_cadence, a->max_cadence);
+    this->avg_running_cadence = avg_optional(this->avg_running_cadence, a->avg_running_cadence);
+    this->max_running_cadence = max_optional(this->max_running_cadence, a->max_running_cadence);
+    this->total_strides = acc_optional(this->total_strides, a->total_strides);
+    this->total_calories = acc_optional(this->total_calories, a->total_calories);
+    this->total_ascent = acc_optional(this->total_ascent, a->total_ascent);
+    this->total_descent = acc_optional(this->total_descent, a->total_descent);
+    this->avg_temperature = avg_optional(this->avg_temperature, a->avg_temperature);
+    this->max_temperature = max_optional(this->max_temperature, a->max_temperature);
+    this->min_temperature = min_optional(this->min_temperature, a->min_temperature);
+    this->avg_respiration_rate = avg_optional(this->avg_respiration_rate, a->avg_respiration_rate);
+    this->max_respiration_rate = max_optional(this->max_respiration_rate, a->max_respiration_rate);
+    this->min_respiration_rate = min_optional(this->min_respiration_rate, a->min_respiration_rate);
+    this->training_load_peak = acc_optional(this->training_load_peak, a->training_load_peak);
+    this->total_training_effect = acc_optional(this->total_training_effect, a->total_training_effect);
+    this->total_anaerobic_training_effect = acc_optional(this->total_anaerobic_training_effect, a->total_anaerobic_training_effect);
+}
+
+ActivityType Activity::get_id() const
+{
+    return ActivityType::GENERIC;
+}
+
+void SetsActivity::merge(const std::unique_ptr<Activity>& a)
+{
+    Activity::merge(a);
+
+    if (a->get_id() != ActivityType::SETS)
+    {
+	const auto& sets = static_cast<SetsActivity*>(a.get())->sets;
+	this->sets.insert(this->sets.end(), sets.cbegin(), sets.cend());
+    }
+}
+
+ActivityType SetsActivity::get_id() const
+{
+    return ActivityType::SETS;
+}
+
+void SplitsActivity::merge(const std::unique_ptr<Activity>& a)
+{
+    Activity::merge(a);
+
+    if (a->get_id() != ActivityType::SPLITS)
+    {
+	const auto& splits = static_cast<SplitsActivity*>(a.get())->splits;
+	this->splits.insert(this->splits.end(), splits.cbegin(), splits.cend());
+    }
+}
+
+ActivityType SplitsActivity::get_id() const
+{
+    return ActivityType::SPLITS;
+}
+
+void DistanceActivity::merge(const std::unique_ptr<Activity>& a)
+{
+    Activity::merge(a);
+
+    if (a->get_id() != ActivityType::DISTANCE)
+    {
+	const auto& records = static_cast<DistanceActivity*>(a.get())->records;
+	const auto& laps = static_cast<DistanceActivity*>(a.get())->laps;
+	this->records.insert(this->records.end(), records.cbegin(), records.cend());
+	this->laps.insert(this->laps.end(), laps.cbegin(), laps.cend());
+    }
+}
+
+ActivityType DistanceActivity::get_id() const
+{
+    return ActivityType::DISTANCE;
+}
+
+ActivitiesData::ActivitiesData(const ActivitiesData& other)
+{
+    activities.clear();
+    for (const auto& [idx, a] : other.activities)
+    {
+	switch (a->get_id())
+	{
+	case ActivityType::DISTANCE:
+	    activities[idx] = std::make_unique<DistanceActivity>(dynamic_cast<DistanceActivity&>(*a));
+	    break;
+	case ActivityType::SETS:
+	    activities[idx] = std::make_unique<SetsActivity>(dynamic_cast<SetsActivity&>(*a));
+	    break;
+	case ActivityType::SPLITS:
+	    activities[idx] = std::make_unique<SplitsActivity>(dynamic_cast<SplitsActivity&>(*a));
+	    break;
+	default:
+	    activities[idx] = std::make_unique<Activity>(*a);
+	    break;
+	}
+    }
+
+    errors = other.errors;
+}
+
+ActivitiesData& ActivitiesData::operator=(const ActivitiesData& other)
+{
+    if (this != &other)
+    {
+	activities.clear();
+	
+	for (const auto& [idx, a] : other.activities)
+	{
+	    switch (a->get_id())
+	    {
+	    case ActivityType::DISTANCE:
+		activities[idx] = std::make_unique<DistanceActivity>(dynamic_cast<DistanceActivity&>(*a));
+		break;
+	    case ActivityType::SETS:
+		activities[idx] = std::make_unique<SetsActivity>(dynamic_cast<SetsActivity&>(*a));
+		break;
+	    case ActivityType::SPLITS:
+		activities[idx] = std::make_unique<SplitsActivity>(dynamic_cast<SplitsActivity&>(*a));
+		break;
+	    default:
+		activities[idx] = std::make_unique<Activity>(*a);
+		break;
+	    }
+	}
+
+	errors = other.errors;
+    }
+    return *this;
 }
 
 bool ActivitiesData::load(const rapidjson::Document& document)
@@ -519,20 +660,147 @@ bool ActivitiesData::load(const rapidjson::Document& document)
     {
 	if (v.IsObject())
 	{
+	    std::unique_ptr<Activity> activity;
+
 	    auto itr_zone_info = v.FindMember("zone_info");
 	    auto itr_username = v.FindMember("username");
 	    auto itr_session = v.FindMember("session");
+	    auto itr_splits = v.FindMember("splits");
+	    auto itr_sets = v.FindMember("sets");
+	    if (itr_splits != v.MemberEnd() && itr_splits->value.IsArray())
+	    {
+		activity = std::make_unique<SplitsActivity>();
+		for (const auto& s : itr_splits->value.GetArray())
+		{
+		    if (s.IsObject())
+		    {
+			Split split{};
+			
+			auto itr_st = s.FindMember("split_type");
+			auto itr_tet = s.FindMember("total_elapsed_time");
+			auto itr_ttt = s.FindMember("total_timer_time");
+			auto itr_sti = s.FindMember("start_time");
+			auto itr_ah = s.FindMember("avg_hr");
+			auto itr_mh = s.FindMember("max_hr");
+			auto itr_tc = s.FindMember("total_calories");
+			auto itr_d = s.FindMember("difficulty");
+			auto itr_r = s.FindMember("result");
+			auto itr_di = s.FindMember("discarded");
+			
+			if (itr_st != s.MemberEnd() && itr_st->value.IsString())
+			    split.split_type = itr_st->value.GetString();
+			if (itr_tet != s.MemberEnd() && itr_tet->value.IsFloat())
+			    split.total_elapsed_time = itr_tet->value.GetFloat();
+			if (itr_ttt != s.MemberEnd() && itr_ttt->value.IsFloat())
+			    split.total_timer_time = itr_ttt->value.GetFloat();
+			if (itr_sti != s.MemberEnd() && itr_sti->value.IsFloat())
+			    split.start_time = itr_sti->value.GetFloat();
+			if (itr_ah != s.MemberEnd() && itr_ah ->value.IsInt())
+			    split.avg_hr = itr_ah->value.GetInt();
+			if (itr_mh != s.MemberEnd() && itr_mh ->value.IsInt())
+			    split.max_hr = itr_mh->value.GetInt();
+			if (itr_tc != s.MemberEnd() && itr_tc->value.IsInt())
+			    split.total_calories = itr_tc->value.GetInt();
+			if (itr_d != s.MemberEnd() && itr_d->value.IsInt())
+			    split.difficulty = itr_d->value.GetInt();
+			if (itr_di != s.MemberEnd() && itr_di->value.IsInt())
+			    split.result = SplitResult::DISCARDED;
+			else if (itr_r != s.MemberEnd() && itr_r->value.IsInt())
+			{
+			    if (itr_r->value.GetInt() == 2) 
+				split.result = SplitResult::ATTEMPTED;
+			    else if (itr_r->value.GetInt() == 3) 
+				split.result = SplitResult::COMPLETED;
+			}
 
-	    Activity activity{};
+			(static_cast<SplitsActivity*>(activity.get()))->splits.emplace_back(split);
+		    }
+		}
+	    }
+	    else if (itr_sets != v.MemberEnd() && itr_sets->value.IsArray())
+	    {
+		activity = std::make_unique<SetsActivity>();
+		for (const auto& s : itr_sets->value.GetArray())
+		{
+		    if (s.IsObject())
+		    {
+			Set set{};
+
+			auto itr_t = s.FindMember("timestamp");
+			auto itr_st = s.FindMember("set_type");
+			auto itr_d = s.FindMember("duration");
+			auto itr_r = s.FindMember("repetition");
+			auto itr_w = s.FindMember("weight");
+			auto itr_sti = s.FindMember("start_time");
+			auto itr_c = s.FindMember("category");
+			auto itr_sc = s.FindMember("sub_category");
+			auto itr_wdu = s.FindMember("weight_display_unit");
+			auto itr_mi = s.FindMember("message_index");
+			auto itr_wsi = s.FindMember("wkt_step_index");
+
+			if (itr_t != s.MemberEnd() && itr_t->value.IsFloat())
+			    set.timestamp = itr_t->value.GetFloat();
+			if (itr_st != s.MemberEnd() && itr_st->value.IsString())
+			{
+			    auto it = std::find(std::begin(set_type_names), std::end(set_type_names), itr_st->value.GetString());
+			    if (it != std::end(set_type_names))
+			    {
+				std::size_t idx = std::distance(std::begin(set_type_names), it);
+				set.set_type = SetType(idx);
+			    }
+			}
+			if (itr_d != s.MemberEnd() && itr_d->value.IsFloat())
+			    set.duration = itr_d->value.GetFloat();
+			if (itr_r != s.MemberEnd() && itr_r->value.IsInt())
+			    set.repetitions = itr_r->value.GetInt();
+			if (itr_w != s.MemberEnd() && itr_w->value.IsFloat())
+			    set.weight = itr_d->value.GetFloat();
+			if (itr_sti != s.MemberEnd() && itr_sti->value.IsFloat())
+			    set.start_time = itr_sti->value.GetFloat();
+			if (itr_c != s.MemberEnd() && itr_c->value.IsArray())
+			{
+			    for (const auto& v : itr_c->value.GetArray())
+			    {
+				if (v.IsInt())
+				    set.category.emplace_back(std::to_string(v.GetInt()));
+				else if (v.IsString())
+				    set.category.emplace_back(v.GetString());
+			    }
+			}
+			if (itr_sc != s.MemberEnd() && itr_sc->value.IsArray())
+			{
+			    for (const auto& v : itr_sc->value.GetArray())
+			    {
+				if (v.IsInt())
+				    set.category_subtype.emplace_back(std::to_string(v.GetInt()));
+				else if (v.IsString())
+				    set.category_subtype.emplace_back(v.GetString());
+			    }
+			}
+			if (itr_wdu != s.MemberEnd() && itr_wdu->value.IsString())
+			    set.weight_display_unit = itr_wdu->value.GetString();
+			if (itr_mi != s.MemberEnd() && itr_mi->value.IsInt())
+			    set.message_index = itr_mi->value.GetInt();
+			if (itr_wsi != s.MemberEnd() && itr_wsi->value.IsInt())
+			    set.wkt_step_index = itr_wsi->value.GetInt();
+
+			(static_cast<SetsActivity*>(activity.get()))->sets.emplace_back(set);
+		    }
+		}
+	    }
+	    else
+	    {
+		activity = std::make_unique<DistanceActivity>();
+	    }
 
 	    if (itr_zone_info != v.MemberEnd() && itr_zone_info->value.IsString())
 	    {
-		activity.zone_info = itr_zone_info->value.GetString();
+		activity->zone_info = itr_zone_info->value.GetString();
 	    }
 
 	    if (itr_username != v.MemberEnd() && itr_username->value.IsString())
 	    {
-		activity.username = itr_username->value.GetString();
+		activity->username = itr_username->value.GetString();
 	    }
 
 	    if (itr_session != v.MemberEnd() && itr_session->value.IsObject())
@@ -571,99 +839,99 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 		auto itr_tate = itr_session->value.FindMember("total_anaerobic_training_effect");
 
 		if (itr_spn != itr_session->value.MemberEnd() && itr_spn->value.IsString())
-		    activity.sport_profile_name = itr_spn->value.GetString();
+		    activity->sport_profile_name = itr_spn->value.GetString();
 
 		if (itr_s != itr_session->value.MemberEnd() && itr_s->value.IsString())
-		    activity.sport = itr_s->value.GetString();
+		    activity->sport = itr_s->value.GetString();
 
 		if (itr_ss != itr_session->value.MemberEnd() && itr_ss->value.IsString())
-		    activity.sub_sport = itr_ss->value.GetString();
+		    activity->sub_sport = itr_ss->value.GetString();
 
 		if (itr_splat != itr_session->value.MemberEnd() && itr_splat->value.IsNumber() &&
 		    itr_splon != itr_session->value.MemberEnd() && itr_splon->value.IsNumber())
-		    activity.start_lat_lon = {itr_splat->value.GetFloat(), itr_splon->value.GetFloat()};
+		    activity->start_lat_lon = {itr_splat->value.GetFloat(), itr_splon->value.GetFloat()};
 
 		if (itr_eplat != itr_session->value.MemberEnd() && itr_eplat->value.IsNumber() &&
 		    itr_eplon != itr_session->value.MemberEnd() && itr_eplon->value.IsNumber())
-		    activity.end_lat_lon = {itr_eplat->value.GetFloat(), itr_eplon->value.GetFloat()};
+		    activity->end_lat_lon = {itr_eplat->value.GetFloat(), itr_eplon->value.GetFloat()};
 
 		if (itr_st != itr_session->value.MemberEnd() && itr_st->value.IsString())
-		    activity.start_time_utc = itr_st->value.GetString();
+		    activity->start_time_utc = itr_st->value.GetString();
 
 		if (itr_et != itr_session->value.MemberEnd() && itr_et->value.IsNumber())
-		    activity.total_elapsed_time = itr_et->value.GetFloat();
+		    activity->total_elapsed_time = itr_et->value.GetFloat();
 
 		if (itr_tt != itr_session->value.MemberEnd() && itr_tt->value.IsNumber())
-		    activity.total_timer_time = itr_tt->value.GetFloat();
+		    activity->total_timer_time = itr_tt->value.GetFloat();
 
 		if (itr_td != itr_session->value.MemberEnd() && itr_td->value.IsNumber())
-		    activity.total_distance =itr_td->value.GetFloat();
+		    activity->total_distance =itr_td->value.GetFloat();
 
 		if (itr_eas != itr_session->value.MemberEnd() && itr_eas->value.IsNumber())
-		    activity.avg_speed = itr_eas->value.GetFloat();
+		    activity->avg_speed = itr_eas->value.GetFloat();
 		else if (itr_as != itr_session->value.MemberEnd() && itr_as->value.IsNumber())
-		    activity.avg_speed = itr_as->value.GetFloat();
+		    activity->avg_speed = itr_as->value.GetFloat();
 
 		if (itr_ems != itr_session->value.MemberEnd() && itr_ems->value.IsNumber())
-		    activity.max_speed = itr_ems->value.GetFloat();
+		    activity->max_speed = itr_ems->value.GetFloat();
 		else if (itr_ms != itr_session->value.MemberEnd() && itr_ms->value.IsNumber())
-		    activity.max_speed = itr_ms->value.GetFloat();
+		    activity->max_speed = itr_ms->value.GetFloat();
 
 		if (itr_ac != itr_session->value.MemberEnd() && itr_ac->value.IsNumber())
-		    activity.avg_cadence = itr_ac->value.GetFloat();
+		    activity->avg_cadence = itr_ac->value.GetFloat();
 
 		if (itr_mc != itr_session->value.MemberEnd() && itr_mc->value.IsNumber())
-		    activity.max_cadence = itr_mc->value.GetFloat();
+		    activity->max_cadence = itr_mc->value.GetFloat();
 
 		if (itr_arc != itr_session->value.MemberEnd() && itr_arc->value.IsNumber())
-		    activity.avg_running_cadence = itr_arc->value.GetFloat();
+		    activity->avg_running_cadence = itr_arc->value.GetFloat();
 
 		if (itr_mrc != itr_session->value.MemberEnd() && itr_mrc->value.IsNumber())
-		    activity.max_running_cadence = itr_mrc->value.GetFloat();
+		    activity->max_running_cadence = itr_mrc->value.GetFloat();
 
 		if (itr_ts != itr_session->value.MemberEnd() && itr_ts->value.IsNumber())
-		    activity.total_strides = itr_ts->value.GetFloat();
+		    activity->total_strides = itr_ts->value.GetFloat();
 
 		if (itr_tc != itr_session->value.MemberEnd() && itr_tc->value.IsNumber())
-		    activity.total_calories = itr_tc->value.GetFloat();
+		    activity->total_calories = itr_tc->value.GetFloat();
 
 		if (itr_ta != itr_session->value.MemberEnd() && itr_ta->value.IsNumber())
-		    activity.total_ascent = itr_ta->value.GetFloat();
+		    activity->total_ascent = itr_ta->value.GetFloat();
 
 		if (itr_tde != itr_session->value.MemberEnd() && itr_tde->value.IsNumber())
-		    activity.total_descent = itr_tde->value.GetFloat();
+		    activity->total_descent = itr_tde->value.GetFloat();
 
 		if (itr_at != itr_session->value.MemberEnd() && itr_at->value.IsNumber())
-		    activity.avg_temperature = itr_at->value.GetFloat();
+		    activity->avg_temperature = itr_at->value.GetFloat();
 
 		if (itr_mat != itr_session->value.MemberEnd() && itr_mat->value.IsNumber())
-		    activity.max_temperature = itr_mat->value.GetFloat();
+		    activity->max_temperature = itr_mat->value.GetFloat();
 
 		if (itr_mit != itr_session->value.MemberEnd() && itr_mit->value.IsNumber())
-		    activity.min_temperature = itr_mit->value.GetFloat();
+		    activity->min_temperature = itr_mit->value.GetFloat();
 
 		if (itr_earr != itr_session->value.MemberEnd() && itr_earr->value.IsNumber())
-		    activity.avg_respiration_rate = itr_earr->value.GetFloat();
+		    activity->avg_respiration_rate = itr_earr->value.GetFloat();
 
 		if (itr_emaxrr != itr_session->value.MemberEnd() && itr_emaxrr->value.IsNumber())
-		    activity.max_respiration_rate = itr_emaxrr->value.GetFloat();
+		    activity->max_respiration_rate = itr_emaxrr->value.GetFloat();
 
 		if (itr_eminrr != itr_session->value.MemberEnd() && itr_eminrr->value.IsNumber())
-		    activity.min_respiration_rate = itr_eminrr->value.GetFloat();
+		    activity->min_respiration_rate = itr_eminrr->value.GetFloat();
 
 		if (itr_tlp != itr_session->value.MemberEnd() && itr_tlp->value.IsNumber())
-		    activity.training_load_peak = itr_tlp->value.GetFloat();
+		    activity->training_load_peak = itr_tlp->value.GetFloat();
 
 		if (itr_tte != itr_session->value.MemberEnd() && itr_tte->value.IsNumber())
-		    activity.total_training_effect = itr_tte->value.GetFloat();
+		    activity->total_training_effect = itr_tte->value.GetFloat();
 
 		if (itr_tate != itr_session->value.MemberEnd() && itr_tate->value.IsNumber())
-		    activity.total_anaerobic_training_effect = itr_tate->value.GetFloat();
+		    activity->total_anaerobic_training_effect = itr_tate->value.GetFloat();
 	    }
 
-	    DateIdx idx{activity.start_time_utc};
-	    if (!activity.start_time_utc.empty() && idx.is_valid())
-		this->activities[idx] = activity;
+	    DateIdx idx{activity->start_time_utc};
+	    if (!activity->start_time_utc.empty() && idx.is_valid())
+		this->activities[idx] = std::move(activity);
 	    else
 		this->errors.emplace_back("JSON error: start time is not a valid date.");
 	}

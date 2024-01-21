@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <format>
 #include <functional>
+#include <memory>
 #include <numeric>
 #include <string>
 #include <iostream>
@@ -16,6 +17,7 @@
 #include "../core/api.h"
 #include "shell.h"
 #include "calendar.h"
+#include "repr.h"
 
 using std::cin;
 using std::cout;
@@ -126,31 +128,6 @@ inline ushort ask_for_month()
     } while (month < 1 || month > 12);
     cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     return month;
-}
-
-template <typename T>
-std::string formatted_number(const T& n)
-{
-    std::string res = std::to_string(n);
-    size_t pos = res.find('.');
-    short mils_pos{};
-
-    if (pos == std::string::npos)
-	mils_pos = res.length() > 3 ? res.length() - 3: 0;
-    else
-	mils_pos -= 3;
-    
-    while (mils_pos > 0)
-    {
-        res.insert(mils_pos, " ");
-        mils_pos = mils_pos > 3 ? mils_pos - 3 : 0;
-    }
-
-    size_t decimal_pos = res.find('.');
-    if (decimal_pos != std::string::npos && decimal_pos + 3 < res.length())
-	res = res.substr(0, decimal_pos + 3);
-
-    return res;
 }
 
 inline bool Shell::login()
@@ -369,7 +346,6 @@ void Shell::loop()
 	    break;
 	}
     } while (option != 'q');
-
 }
 
 inline void print_steps_stats(const std::string& h, const Steps& s)
@@ -378,13 +354,13 @@ inline void print_steps_stats(const std::string& h, const Steps& s)
     cout << "-----------------------------------------------------" << endl;
     cout << std::left << std::setfill('.') << std::setw(20) << "Steps"
 	 << std::right << std::setfill('.') << std::setw(20)
-	 << formatted_number(s.steps) << " steps" << endl;
+	 << unit(s.steps, "steps") << endl;
     cout << std::left << std::setfill('.') << std::setw(20) << "Distance"
 	 << std::right << std::setfill('.') << std::setw(20)
-	 << formatted_number(static_cast<int>(std::round(s.distance))) << " m" << endl;
+	 << distance(s.distance) << endl;
     cout << std::left << std::setfill('.') << std::setw(20) << "Calories"
 	 << std::right << std::setfill('.') << std::setw(20)
-	 << formatted_number(s.calories) << " kcal" << endl << endl;
+	 << calories(s.calories) << endl << endl;
 }
 
 void ShellSteps::loop() const
@@ -530,31 +506,31 @@ inline void print_sleep_stats(const std::string& h, const Sleep& s, const size_t
     cout << "-----------------------------------------------------" << endl;
     cout << std::left << std::setfill('.') << std::setw(20) << "Sleep Score"
 	 << std::right << std::setfill('.') << std::setw(20)
-	 << formatted_number(s.assessment.overall_sleep_score / count) << endl
+	 << unit(s.assessment.overall_sleep_score / count) << endl
 	 << std::left << std::setfill('.') << std::setw(20) << "Deep Score"
 	 << std::right << std::setfill('.') << std::setw(20)
-	 << formatted_number(s.assessment.deep_sleep_score / count) << endl
+	 << unit(s.assessment.deep_sleep_score / count) << endl
 	 << std::left << std::setfill('.') << std::setw(20) << "REM Score"
 	 << std::right << std::setfill('.') << std::setw(20)
-	 << formatted_number(s.assessment.rem_sleep_score / count) << endl
+	 << unit(s.assessment.rem_sleep_score / count) << endl
 	 << std::left << std::setfill('.') << std::setw(20) << "Light Score"
 	 << std::right << std::setfill('.') << std::setw(20)
-	 << formatted_number(s.assessment.light_sleep_score / count) << endl
+	 << unit(s.assessment.light_sleep_score / count) << endl
 	 << std::left << std::setfill('.') << std::setw(20) << "Awekening Count"
 	 << std::right << std::setfill('.') << std::setw(20)
-	 << formatted_number(s.assessment.awakenings_count / count) << endl
+	 << unit(s.assessment.awakenings_count / count) << endl
 	 << std::left << std::setfill('.') << std::setw(20) << "Duration Score"
 	 << std::right << std::setfill('.') << std::setw(20)
-	 << formatted_number(s.assessment.sleep_duration_score / count) << endl
+	 << unit(s.assessment.sleep_duration_score / count) << endl
 	 << std::left << std::setfill('.') << std::setw(20) << "Quality Score"
 	 << std::right << std::setfill('.') << std::setw(20)
-	 << formatted_number(s.assessment.sleep_quality_score / count) << endl
+	 << unit(s.assessment.sleep_quality_score / count) << endl
 	 << std::left << std::setfill('.') << std::setw(20) << "Recovery Score"
 	 << std::right << std::setfill('.') << std::setw(20)
-	 << formatted_number(s.assessment.sleep_recovery_score / count) << endl
+	 << unit(s.assessment.sleep_recovery_score / count) << endl
 	 << std::left << std::setfill('.') << std::setw(20) << "Avg. Stress"
 	 << std::right << std::setfill('.') << std::setw(20)
-	 << formatted_number(s.assessment.average_stress_during_sleep / count) << endl << endl;
+	 << unit(s.assessment.average_stress_during_sleep / count) << endl << endl;
 }
 
 void ShellSleep::loop() const
@@ -724,33 +700,6 @@ void ShellSleep::week_stats(const ushort& year, const ushort& month) const
     calendar.print();
 }
 
-inline void print_activities_stats(const std::string& h, const std::map<std::string, Activity>& a_list)
-{
-    cout << h << endl;
-    cout << "-----------------------------------------------------" << endl;
-    for (const auto& [sport, a] : a_list)
-    {
-	cout << std::left << std::setfill('.') << std::setw(20) << "Name"
-	     << std::right << std::setfill('.') << std::setw(20)
-	     << a.sport_profile_name << endl;
-	cout << std::left << std::setfill('.') << std::setw(20) << "Activity"
-	     << std::right << std::setfill('.') << std::setw(20)
-	     << a.sport << " (" << a.sub_sport << ")" << endl;
-	cout << std::left << std::setfill('.') << std::setw(20) << "Distance"
-	     << std::right << std::setfill('.') << std::setw(20)
-	     << formatted_number(a.total_distance / 1000) << " km" << endl;
-	cout << std::left << std::setfill('.') << std::setw(20) << "Total elapsed time"
-	     << std::right << std::setfill('.') << std::setw(20)
-	     << formatted_number(a.total_elapsed_time / 60) << " min" << endl;
-	cout << std::left << std::setfill('.') << std::setw(20) << "Ascent"
-	     << std::right << std::setfill('.') << std::setw(20)
-	     << formatted_number(a.total_ascent) << " m" << endl;
-	cout << std::left << std::setfill('.') << std::setw(20) << "Descent"
-	     << std::right << std::setfill('.') << std::setw(20)
-	     << formatted_number(a.total_descent) << " m" << endl << endl;
-    }
-}
-
 void ShellActivities::loop() const
 {
     char option;
@@ -793,9 +742,95 @@ void ShellActivities::loop() const
     } while (option != 'q');
 }
 
-inline void print_activities_stats(const std::string& header, const Activity& a)
+inline void print_distance_activities_stats(const DistanceActivity* a)
 {
-    cout << header << " | " << a.total_timer_time << endl;
+    if (a->total_distance.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Distance"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << distance(a->total_distance.value()) << endl;
+    if (a->avg_speed.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Avg. Speed"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << speed(a->avg_speed.value()) << endl;
+    if (a->max_speed.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Max. Speed"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << speed(a->max_speed.value()) << endl;
+    if (a->total_ascent.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Ascent"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << elevation(a->total_ascent.value()) << endl;
+    if (a->total_descent.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Descent"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << elevation(a->total_descent.value()) << endl;
+    if (a->total_calories.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Total Calories"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << calories(a->total_calories.value()) << endl;
+    if (a->avg_temperature.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Avg. Temperature"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << temperature(a->avg_temperature.value()) << endl;
+    if (a->max_temperature.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Max. Temperature"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << temperature(a->max_temperature.value()) << endl;
+    if (a->min_temperature.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Min. Temperature"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << temperature(a->min_temperature.value()) << endl;
+    if (a->avg_respiration_rate.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Avg. Respiration Rate"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << unit(a->avg_respiration_rate.value()) << endl;
+    if (a->max_respiration_rate.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Max. Respiration Rate"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << unit(a->max_respiration_rate.value()) << endl;
+    if (a->min_respiration_rate.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Min. Respiration Rate"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << unit(a->min_respiration_rate.value()) << endl;
+    if (a->training_load_peak.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Training Load Peak"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << unit(a->training_load_peak.value()) << endl;
+    if (a->total_training_effect.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Total Training Effect"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << unit(a->total_training_effect.value()) << endl;
+    if (a->total_anaerobic_training_effect.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Total Anaerobic Training Effect"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << unit(a->total_anaerobic_training_effect.value()) << endl;
+}
+
+inline void print_activities_stats(const std::string& h, const std::map<std::string, std::unique_ptr<Activity>>& activities)
+{
+    cout << h << endl;
+    cout << "-----------------------------------------------------" << endl;
+    for (const auto& [sport, a] : activities)
+    {
+	cout << std::left << std::setfill('.') << std::setw(30) << "Name"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << a->sport_profile_name << endl;
+	cout << std::left << std::setfill('.') << std::setw(30) << "Type ID"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << a->get_id() << endl;
+	cout << std::left << std::setfill('.') << std::setw(30) << "Activity"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << a->sport << " (" << a->sub_sport << ")" << endl;
+	if (a->total_elapsed_time.has_value())
+	{
+	    cout << std::left << std::setfill('.') << std::setw(30) << "Total elapsed time"
+		 << std::right << std::setfill('.') << std::setw(30)
+		 << time(a->total_elapsed_time.value()) << endl;
+	}
+	if (auto distanceActivity = dynamic_cast<const DistanceActivity*>(a.get()))
+	    print_distance_activities_stats(distanceActivity);
+	cout << endl;
+    }
 }
 
 void ShellActivities::dashboard() const
@@ -810,7 +845,7 @@ void ShellActivities::dashboard() const
 	return;
     }
 
-    std::map<std::string, Activity> activities{};
+    std::map<std::string, std::unique_ptr<Activity>> activities{};
     short current_year = this->data.activities.begin()->first.year();
     for (const auto& [idx, a] : this->data.activities)
     {
@@ -818,10 +853,20 @@ void ShellActivities::dashboard() const
 	{
 	    print_activities_stats(std::format("Year {}", current_year), activities);
 	    current_year = idx.year();
-	    activities = {};
+	    activities.clear();
 	}
 
-	activities[a.sport] += a;
+	if (!activities.contains(a->sport))
+	{
+	    switch (a->get_id())
+	    {
+	    case ActivityType::DISTANCE: activities[a->sport] = std::make_unique<DistanceActivity>(); break;
+	    case ActivityType::SETS: activities[a->sport] = std::make_unique<SetsActivity>(); break;
+	    case ActivityType::SPLITS: activities[a->sport] = std::make_unique<SplitsActivity>(); break;
+	    default: activities[a->sport] = std::make_unique<Activity>(); break;
+	    }
+	}
+	activities[a->sport]->merge(a);
     }
 
     print_activities_stats(std::format("Year {}", current_year), activities);
@@ -845,10 +890,28 @@ void ShellActivities::month_stats(const ushort& year, const ushort& month) const
 	return;
     }
 
-    std::map<std::string, Activity> activities{};
+    std::map<std::string, std::unique_ptr<Activity>> activities{};
     while (itr != this->data.activities.end() && (itr->first.year() == year && itr->first.month() == month))
     {
-	activities[itr->second.sport] += itr->second;
+	if (!activities.contains(itr->second->sport))
+	{
+	    switch (itr->second->get_id())
+	    {
+	    case ActivityType::DISTANCE:
+		activities[itr->second->sport] = std::make_unique<DistanceActivity>();
+		break;
+	    case ActivityType::SETS:
+		activities[itr->second->sport] = std::make_unique<SetsActivity>();
+		break;
+	    case ActivityType::SPLITS:
+		activities[itr->second->sport] = std::make_unique<SplitsActivity>();
+		break;
+	    default:
+		activities[itr->second->sport] = std::make_unique<Activity>();
+		break;
+	    }
+	}
+	activities[itr->second->sport]->merge(itr->second);
 	itr++;
     }
 
@@ -881,12 +944,12 @@ void ShellActivities::week_stats(const ushort& year, const ushort& month) const
     while (itr != this->data.activities.end() && itr->first.ymd() <= last_wd_ymd)
     {
 	std::string s{};
-	if (itr->second.total_distance > 0)
-	    s = itr->second.sport_profile_name +
-		" (" + formatted_number(itr->second.total_distance / 1000) + " km";
+	if (itr->second->get_id() == ActivityType::DISTANCE)
+	    s = itr->second->sport_profile_name +
+		" (" + distance(itr->second->total_distance.value()) + ")";
 	else
-	    s = itr->second.sport_profile_name +
-		" (" + formatted_number(itr->second.total_elapsed_time / 60) + " min";
+	    s = itr->second->sport_profile_name +
+		 " (" + time(itr->second->total_elapsed_time.value()) + ")";
 	calendar.add(itr->first.ymd(), s);
 	itr++;
     }

@@ -1,12 +1,14 @@
 #ifndef _ES_RGMF_UI_REPR_H
 #define _ES_RGMF_UI_REPR_H 1
 
+#include <chrono>
 #include <string>
 
 namespace fitgalgo
 {    
 
 std::string time(const float& v); 
+std::string date(const std::chrono::year_month_day& v); 
 std::string distance(const float& v); 
 std::string speed(const float& v); 
 std::string elevation(const float& v); 

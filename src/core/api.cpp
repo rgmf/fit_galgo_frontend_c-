@@ -460,121 +460,47 @@ std::ostream& operator<<(std::ostream& os, ActivityType at)
     return os;
 }
 
-std::optional<float> acc_optional(const std::optional<float> &lhs,
-                                  const std::optional<float> &rhs)
-{
-    return lhs.has_value() ? (rhs.has_value() ? std::optional<float>(lhs.value() + rhs.value()) : lhs) : rhs;
-}
-
-std::optional<float> avg_optional(const std::optional<float> &lhs,
-                                  const std::optional<float> &rhs)
-{
-    if (!lhs.has_value() || lhs.value() == 0)
-	return rhs;
-    if (!rhs.has_value() || rhs.value() == 0)
-	return lhs;
-    return std::optional<float>((lhs.value() + rhs.value()) / 2);
-}
-
-std::optional<float> max_optional(const std::optional<float> &lhs,
-                                  const std::optional<float> &rhs)
-{
-    if (!lhs.has_value())
-	return rhs;
-    if (!rhs.has_value())
-	return lhs;
-    return std::optional<float>(lhs.value() > rhs.value() ? lhs.value() : rhs.value());
-}
-
-std::optional<float> min_optional(const std::optional<float> &lhs,
-                                  const std::optional<float> &rhs)
-{
-    if (!lhs.has_value())
-	return rhs;
-    if (!rhs.has_value())
-	return lhs;
-    return std::optional<float>(lhs.value() < rhs.value() ? lhs.value() : rhs.value());
-}
-
-void Activity::merge(const std::unique_ptr<Activity>& a)
-{
-    if (this->zone_info.empty())
-	this->zone_info = a->zone_info;
-    if (this->username.empty())
-	this->username = a->username;
-    if (this->sport_profile_name.empty())
-	this->sport_profile_name = a->sport_profile_name;
-    if (this->sport.empty())
-	this->sport = a->sport;
-    if (this->sub_sport.empty())
-	this->sub_sport = a->sub_sport;
-    if (!this->start_lat_lon.has_value())
-	this->start_lat_lon = a->start_lat_lon;
-    if (a->end_lat_lon.has_value())
-	this->end_lat_lon = a->end_lat_lon;
-    if (this->start_time_utc.empty())
-	this->start_time_utc = a->start_time_utc;
-    this->total_elapsed_time = acc_optional(this->total_elapsed_time, a->total_elapsed_time);
-    this->total_timer_time = acc_optional(this->total_timer_time, a->total_timer_time);
-    this->total_distance = acc_optional(this->total_distance, a->total_distance);
-    this->avg_speed = avg_optional(this->avg_speed, a->avg_speed);
-    this->max_speed = max_optional(this->max_speed, a->max_speed);
-    this->avg_cadence = avg_optional(this->avg_cadence, a->avg_cadence);
-    this->max_cadence = max_optional(this->max_cadence, a->max_cadence);
-    this->avg_running_cadence = avg_optional(this->avg_running_cadence, a->avg_running_cadence);
-    this->max_running_cadence = max_optional(this->max_running_cadence, a->max_running_cadence);
-    this->total_strides = acc_optional(this->total_strides, a->total_strides);
-    this->total_calories = acc_optional(this->total_calories, a->total_calories);
-    this->total_ascent = acc_optional(this->total_ascent, a->total_ascent);
-    this->total_descent = acc_optional(this->total_descent, a->total_descent);
-    this->avg_temperature = avg_optional(this->avg_temperature, a->avg_temperature);
-    this->max_temperature = max_optional(this->max_temperature, a->max_temperature);
-    this->min_temperature = min_optional(this->min_temperature, a->min_temperature);
-    this->avg_respiration_rate = avg_optional(this->avg_respiration_rate, a->avg_respiration_rate);
-    this->max_respiration_rate = max_optional(this->max_respiration_rate, a->max_respiration_rate);
-    this->min_respiration_rate = min_optional(this->min_respiration_rate, a->min_respiration_rate);
-    this->training_load_peak = acc_optional(this->training_load_peak, a->training_load_peak);
-    this->total_training_effect = acc_optional(this->total_training_effect, a->total_training_effect);
-    this->total_anaerobic_training_effect = acc_optional(this->total_anaerobic_training_effect, a->total_anaerobic_training_effect);
-}
-
 ActivityType Activity::get_id() const
 {
     return ActivityType::GENERIC;
 }
-
+/*
 void SetsActivity::merge(const std::unique_ptr<Activity>& a)
 {
     Activity::merge(a);
 
     if (a->get_id() != ActivityType::SETS)
     {
-	const auto& sets = static_cast<SetsActivity*>(a.get())->sets;
-	this->sets.insert(this->sets.end(), sets.cbegin(), sets.cend());
+        const auto& sets = static_cast<SetsActivity*>(a.get())->sets;
+        this->sets.insert(this->sets.end(), sets.cbegin(), sets.cend());
     }
 }
+*/
 
 ActivityType SetsActivity::get_id() const
 {
     return ActivityType::SETS;
 }
 
+/*
 void SplitsActivity::merge(const std::unique_ptr<Activity>& a)
 {
     Activity::merge(a);
 
     if (a->get_id() != ActivityType::SPLITS)
     {
-	const auto& splits = static_cast<SplitsActivity*>(a.get())->splits;
-	this->splits.insert(this->splits.end(), splits.cbegin(), splits.cend());
+        const auto& splits = static_cast<SplitsActivity*>(a.get())->splits;
+        this->splits.insert(this->splits.end(), splits.cbegin(), splits.cend());
     }
 }
+*/
 
 ActivityType SplitsActivity::get_id() const
 {
     return ActivityType::SPLITS;
 }
 
+/*
 void DistanceActivity::merge(const std::unique_ptr<Activity>& a)
 {
     Activity::merge(a);
@@ -587,6 +513,7 @@ void DistanceActivity::merge(const std::unique_ptr<Activity>& a)
 	this->laps.insert(this->laps.end(), laps.cbegin(), laps.cend());
     }
 }
+*/
 
 ActivityType DistanceActivity::get_id() const
 {
@@ -840,7 +767,7 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 
 		if (itr_spn != itr_session->value.MemberEnd() && itr_spn->value.IsString())
 		    activity->sport_profile_name = itr_spn->value.GetString();
-
+		
 		if (itr_s != itr_session->value.MemberEnd() && itr_s->value.IsString())
 		    activity->sport = itr_s->value.GetString();
 

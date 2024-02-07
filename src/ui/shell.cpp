@@ -1,4 +1,3 @@
-#include <bits/chrono.h>
 #include <chrono>
 #include <cstddef>
 #include <cstdio>
@@ -15,6 +14,7 @@
 #include <termios.h>
 
 #include "../core/api.h"
+#include "../core/stats.h"
 #include "shell.h"
 #include "calendar.h"
 #include "repr.h"
@@ -50,6 +50,22 @@ inline void enable_echo()
     tcgetattr(STDIN_FILENO, &tty);
     tty.c_lflag |= ECHO;
     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+}
+
+void keyboard_handled(std::function<void()> callback)
+{
+    char c{};
+    do
+    {
+	callback();
+	cout << "\033[33m";
+	cout << endl << endl;
+	cout << "--------------------------------------------------" << endl;
+	cout << "q -> exit" << endl;
+	cout << "--------------------------------------------------" << endl;
+	cout << "\033[0m";
+	c = get_char();
+    } while (c != 'q');
 }
 
 void keyboard_handled(
@@ -705,7 +721,7 @@ void ShellActivities::loop() const
     char option;
     const std::chrono::time_point now{std::chrono::system_clock::now()};
     const std::chrono::year_month_day ymd{std::chrono::floor<std::chrono::days>(now)};
-    
+
     do {
 	system("clear");
 	cout << "ACTIVITIES STATS" << endl;
@@ -722,9 +738,9 @@ void ShellActivities::loop() const
 	switch (option)
 	{
 	case '1':
-	    this->dashboard();
-	    cout << endl << "Press Enter to continue...";
-	    cin.get();
+	    keyboard_handled([this]() {
+		this->dashboard();
+	    });
 	    break;
 	case '2':
 	    cout << endl;
@@ -833,43 +849,115 @@ inline void print_activities_stats(const std::string& h, const std::map<std::str
     }
 }
 
+inline void print_aggregated_stats(const AggregatedStats& stats)
+{
+    const auto& a = stats.get_aggregated_stats();
+
+    cout << std::left << std::setfill('.') << std::setw(30) << "Number of activities"
+	 << std::right << std::setfill('.') << std::setw(30)
+	 << stats.get_count()<< endl;
+    cout << std::left << std::setfill('.') << std::setw(30) << "From"
+	 << std::right << std::setfill('.') << std::setw(30)
+	 << date(stats.get_from_year_month_day()) << endl;
+    cout << std::left << std::setfill('.') << std::setw(30) << "To"
+	 << std::right << std::setfill('.') << std::setw(30)
+	 << date(stats.get_to_year_month_day()) << endl;
+    if (a->total_elapsed_time.has_value())
+    {
+	cout << std::left << std::setfill('.') << std::setw(30) << "Total elapsed time"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << time(a->total_elapsed_time.value()) << endl;
+    }
+    if (a->total_timer_time.has_value())
+    {
+	cout << std::left << std::setfill('.') << std::setw(30) << "Total timer time"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << time(a->total_timer_time.value()) << endl;
+    }
+    if (a->total_work_time.has_value())
+    {
+	cout << std::left << std::setfill('.') << std::setw(30) << "Total activity time"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << time(a->total_work_time.value()) << endl;
+    }
+    if (a->total_distance.has_value())
+    {
+	cout << std::left << std::setfill('.') << std::setw(30) << "Total distance"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << distance(a->total_distance.value()) << endl;
+    }
+    if (a->avg_speed.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Avg. Speed"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << speed(a->avg_speed.value()) << endl;
+    if (a->max_speed.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Max. Speed"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << speed(a->max_speed.value()) << endl;
+    if (a->total_ascent.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Ascent"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << elevation(a->total_ascent.value()) << endl;
+    if (a->total_descent.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Descent"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << elevation(a->total_descent.value()) << endl;
+    if (a->total_calories.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Total Calories"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << calories(a->total_calories.value()) << endl;
+    if (a->avg_temperature.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Avg. Temperature"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << temperature(a->avg_temperature.value()) << endl;
+    if (a->max_temperature.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Max. Temperature"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << temperature(a->max_temperature.value()) << endl;
+    if (a->min_temperature.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Min. Temperature"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << temperature(a->min_temperature.value()) << endl;
+    if (a->avg_respiration_rate.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Avg. Respiration Rate"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << unit(a->avg_respiration_rate.value()) << endl;
+    if (a->max_respiration_rate.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Max. Respiration Rate"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << unit(a->max_respiration_rate.value()) << endl;
+    if (a->min_respiration_rate.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Min. Respiration Rate"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << unit(a->min_respiration_rate.value()) << endl;
+    if (a->training_load_peak.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Training Load Peak"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << unit(a->training_load_peak.value()) << endl;
+    if (a->total_training_effect.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Total Training Effect"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << unit(a->total_training_effect.value()) << endl;
+    if (a->total_anaerobic_training_effect.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Total Anaerobic Training Effect"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << unit(a->total_anaerobic_training_effect.value()) << endl;
+}
+
 void ShellActivities::dashboard() const
 {
     system("clear");
     cout << "ACTIVITIES STATS" << endl;
     cout << "-------------------------------------------" << endl;
 
-    if (this->data.activities.empty())
+    const auto stats = AggregatedStats(this->data.activities);
+    if (stats.empty())
     {
 	cout << "There are not activities to show" << endl;
 	return;
     }
 
-    std::map<std::string, std::unique_ptr<Activity>> activities{};
-    short current_year = this->data.activities.begin()->first.year();
-    for (const auto& [idx, a] : this->data.activities)
-    {
-	if (current_year != idx.year())
-	{
-	    print_activities_stats(std::format("Year {}", current_year), activities);
-	    current_year = idx.year();
-	    activities.clear();
-	}
-
-	if (!activities.contains(a->sport))
-	{
-	    switch (a->get_id())
-	    {
-	    case ActivityType::DISTANCE: activities[a->sport] = std::make_unique<DistanceActivity>(); break;
-	    case ActivityType::SETS: activities[a->sport] = std::make_unique<SetsActivity>(); break;
-	    case ActivityType::SPLITS: activities[a->sport] = std::make_unique<SplitsActivity>(); break;
-	    default: activities[a->sport] = std::make_unique<Activity>(); break;
-	    }
-	}
-	activities[a->sport]->merge(a);
-    }
-
-    print_activities_stats(std::format("Year {}", current_year), activities);
+    print_aggregated_stats(stats);
 }
 
 void ShellActivities::month_stats(const ushort& year, const ushort& month) const
@@ -878,6 +966,7 @@ void ShellActivities::month_stats(const ushort& year, const ushort& month) const
     cout << "MONTHLY ACTIVITIES STATS FOR " << year << ", " << MONTHS_NAMES[month - 1] << endl;
     cout << "=====================================================" << endl;
 
+    /*
     auto itr = std::find_if(
 	this->data.activities.cbegin(),
 	this->data.activities.cend(),
@@ -916,6 +1005,7 @@ void ShellActivities::month_stats(const ushort& year, const ushort& month) const
     }
 
     print_activities_stats(MONTHS_NAMES[month - 1], activities);
+    */
 }
 
 void ShellActivities::week_stats(const ushort& year, const ushort& month) const
@@ -924,6 +1014,7 @@ void ShellActivities::week_stats(const ushort& year, const ushort& month) const
     cout << MONTHS_NAMES[month - 1] << ", " << year << endl;
     cout << "=====================================================" << endl;
 
+    /*
     Calendar calendar{year, month};
     auto first_wd_ymd = calendar.get_first_wd_ymd();
     auto last_wd_ymd = calendar.get_last_wd_ymd();
@@ -955,6 +1046,7 @@ void ShellActivities::week_stats(const ushort& year, const ushort& month) const
     }
 
     calendar.print();
+    */
 }
 
 } // namespace fitgalgo

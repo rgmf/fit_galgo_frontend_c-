@@ -1,6 +1,7 @@
 #ifndef _ES_RGMF_CORE_API_H
 #define _ES_RGMF_CORE_API_H 1
 
+#include <cstddef>
 #include <memory>
 #include <sys/types.h>
 #include <chrono>
@@ -183,6 +184,7 @@ struct Activity
     std::string start_time_utc{};
     std::optional<float> total_elapsed_time{}; 
     std::optional<float> total_timer_time{};
+    std::optional<float> total_work_time{};
     std::optional<float> total_distance{};
     std::optional<float> avg_speed{};
     std::optional<float> max_speed{};
@@ -204,7 +206,6 @@ struct Activity
     std::optional<float> total_training_effect{};
     std::optional<float> total_anaerobic_training_effect{};
 
-    virtual void merge(const std::unique_ptr<Activity>& a);
     virtual ActivityType get_id() const;
 };
 
@@ -234,7 +235,6 @@ struct SetsActivity : public Activity
 {
     std::vector<Set> sets{};
 
-    void merge(const std::unique_ptr<Activity>& a) override;
     ActivityType get_id() const override;
 };
 
@@ -263,7 +263,6 @@ struct SplitsActivity : public Activity
 {
     std::vector<Split> splits{};
 
-    void merge(const std::unique_ptr<Activity>& a) override;
     ActivityType get_id() const override;
 };
 
@@ -351,7 +350,6 @@ struct DistanceActivity : public Activity
     std::vector<Record> records{};
     std::vector<Lap> laps{};
 
-    void merge(const std::unique_ptr<Activity>& a) override;
     ActivityType get_id() const override;
 };
 

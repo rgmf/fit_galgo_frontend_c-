@@ -1,3 +1,6 @@
+#include <sstream>
+#include <chrono>
+
 #include "repr.h"
 
 namespace fitgalgo
@@ -43,6 +46,19 @@ std::string time(const float &v)
 	result += formatted_number(sec) + "s";
 
     return result;
+}
+
+std::string date(const std::chrono::year_month_day& v)
+{
+    std::chrono::system_clock::time_point tp = std::chrono::sys_days{v};
+    std::time_t t = std::chrono::system_clock::to_time_t(tp);
+    char mbstr[100];
+    if (std::strftime(mbstr, sizeof(mbstr), "%A, %d %B %Y", std::localtime(&t)))
+        return mbstr;
+
+    std::ostringstream oss;
+    oss << v;
+    return oss.str();
 }
 
 std::string distance(const float &v)

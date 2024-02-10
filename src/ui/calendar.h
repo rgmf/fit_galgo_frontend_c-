@@ -1,5 +1,5 @@
-#ifndef _ES_RGMF_UI_CALENDAR_PRINTER_H
-#define _ES_RGMF_UI_CALENDAR_PRINTER_H 1
+#ifndef _ES_RGMF_UI_CALENDAR_H
+#define _ES_RGMF_UI_CALENDAR_H 1
 
 #include <array>
 #include <string>
@@ -62,4 +62,4 @@ public:
 
 }
 
-#endif // _ES_RGMF_UI_CALENDAR_PRINTER_H
+#endif // _ES_RGMF_UI_CALENDAR_H

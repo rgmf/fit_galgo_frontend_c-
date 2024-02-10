@@ -26,6 +26,29 @@ AggregatedStats::AggregatedStats(const std::map<DateIdx, std::unique_ptr<Activit
 }
 
 AggregatedStats::AggregatedStats(
+    const ushort& year, const std::map<DateIdx, std::unique_ptr<Activity>>& activities)
+{
+    count = 0;
+    activity = std::make_unique<Activity>();
+    from = std::chrono::year_month_day(std::chrono::year(year) / std::chrono::January / 1);
+    to = std::chrono::year_month_day(std::chrono::year(year) / std::chrono::December / 31);
+
+    auto itr = std::find_if(
+	activities.cbegin(),
+	activities.cend(),
+	[year](const auto& item) { return item.first.year() == year; });
+    if (itr == activities.end())
+	return;
+
+    while (itr != activities.end() && itr->first.year() == year)
+    {
+	merge(itr->second);
+	count++;
+	itr++;
+    }
+}
+
+AggregatedStats::AggregatedStats(
     const ushort& year, const ushort& month,
     const std::map<DateIdx, std::unique_ptr<Activity>>& activities)
 {
@@ -44,7 +67,7 @@ AggregatedStats::AggregatedStats(
     if (itr == activities.end())
 	return;
 
-    while (itr != activities.end() && (itr->first.year() == year && itr->first.month() == month))
+    while (itr != activities.end() && itr->first.year() == year && itr->first.month() == month)
     {
 	merge(itr->second);
 	count++;
@@ -52,12 +75,19 @@ AggregatedStats::AggregatedStats(
     }
 }
 
+AggregatedStats::AggregatedStats(const AggregatedStats& other)
+    : from(other.from), to(other.to), count(other.count)
+{
+    if (other.activity)
+	activity = std::make_unique<Activity>(*other.activity);
+}
+
 bool AggregatedStats::empty() const
 {
     return count == 0;
 }
     
-const std::unique_ptr<Activity>& AggregatedStats::get_aggregated_stats() const
+const std::unique_ptr<Activity>& AggregatedStats::get_stats() const
 {
     return activity;
 }
@@ -80,7 +110,9 @@ size_t AggregatedStats::get_count() const
 std::optional<float> acc_optional(const std::optional<float> &lhs,
                                   const std::optional<float> &rhs)
 {
-    return lhs.has_value() ? (rhs.has_value() ? std::optional<float>(lhs.value() + rhs.value()) : lhs) : rhs;
+    return lhs.has_value() ?
+	(rhs.has_value() ? std::optional<float>(lhs.value() + rhs.value()) : lhs) :
+	rhs;
 }
 
 std::optional<float> avg_optional(const std::optional<float> &lhs,
@@ -162,6 +194,73 @@ inline void AggregatedStats::merge(const std::unique_ptr<Activity>& a)
 	activity->total_training_effect, a->total_training_effect);
     activity->total_anaerobic_training_effect = acc_optional(
 	activity->total_anaerobic_training_effect, a->total_anaerobic_training_effect);
+}
+
+SportStats::SportStats(
+    const ushort& year, const std::map<DateIdx, std::unique_ptr<Activity>>& activities)
+{
+    stats = {};
+
+    auto itr = std::find_if(
+	activities.cbegin(),
+	activities.cend(),
+	[year](const auto& item) { return item.first.year() == year; });
+    if (itr == activities.end())
+	return;
+
+    auto activities_by_sport = std::map<std::string, std::map<DateIdx, std::unique_ptr<Activity>>>();
+    while (itr != activities.end() && itr->first.year() == year)
+    {
+	std::unique_ptr<Activity> new_activity = std::make_unique<Activity>(*itr->second);
+	activities_by_sport[itr->second->sport][itr->first] = std::move(new_activity);
+	
+	itr++;
+    }
+
+    for (const auto& [sport, a_map] : activities_by_sport)
+    {
+	stats[sport] = AggregatedStats(a_map);
+    }
+}
+
+SportStats::SportStats(
+    const ushort& year, const ushort& month,
+    const std::map<DateIdx, std::unique_ptr<Activity>>& activities)
+{
+    stats = {};
+
+    auto itr = std::find_if(
+	activities.cbegin(),
+	activities.cend(),
+	[year, month](const auto& item) {
+	    return item.first.year() == year && item.first.month() == month;
+	});
+    if (itr == activities.end())
+	return;
+
+    auto activities_by_sport = std::map<std::string, std::map<DateIdx, std::unique_ptr<Activity>>>();
+    while (itr != activities.end() && itr->first.year() == year && itr->first.month() == month)
+    {
+	std::unique_ptr<Activity> new_activity = std::make_unique<Activity>(*itr->second);
+	activities_by_sport[itr->second->sport][itr->first] = std::move(new_activity);
+	
+	itr++;
+    }
+
+    for (const auto& [sport, a_map] : activities_by_sport)
+    {
+	stats[sport] = AggregatedStats(a_map);
+    }
+}
+
+bool SportStats::empty() const
+{
+    return stats.empty();
+}
+
+const std::map<std::string, AggregatedStats>& SportStats::get_stats() const
+{
+    return stats;
 }
 
 }

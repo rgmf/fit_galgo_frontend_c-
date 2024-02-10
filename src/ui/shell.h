@@ -58,15 +58,17 @@ class ShellActivities
 {
 private:
     ActivitiesData data;
+    ushort year;
+    ushort month;
 
-    void dashboard() const;
-    void month_stats(const ushort& year, const ushort& month) const;
-    void week_stats(const ushort& year, const ushort& month) const;
+    void all_times_aggregated_stats() const;
+    void month_stats() const;
+    void year_stats() const;
+    void print_calendar() const;
 
 public:
-    explicit ShellActivities(const ActivitiesData& activities_data)
-	: data(activities_data) {}
-    void loop() const;
+    explicit ShellActivities(const ActivitiesData& activities_data);
+    void loop();
 };
 
 } // namespace fitgalgo

@@ -14,6 +14,7 @@ std::string speed(const float& v);
 std::string elevation(const float& v); 
 std::string calories(const float& v); 
 std::string temperature(const float& v); 
+std::string value(const float& v);
 std::string unit(const float& v);
 std::string unit(const float& v, const std::string& u);
 std::string unit(const int& v);

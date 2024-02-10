@@ -89,6 +89,11 @@ std::string temperature(const float& v)
     return formatted_number(v) + " ºC";
 }
 
+std::string value(const float& v)
+{
+    return formatted_number(v);
+}
+
 std::string unit(const float& v)
 {
     return formatted_number(v);

@@ -1,9 +1,12 @@
+#include <cstddef>
 #include <iostream>
 #include <chrono>
 #include <algorithm>
+#include <sstream>
 #include <string>
 
 #include "calendar.h"
+#include "colors.h"
 
 using std::cout;
 using std::endl;
@@ -63,6 +66,19 @@ inline void Calendar::print_new_line() const
 
 inline void Calendar::print_header() const
 {
+    std::ostringstream header;
+    header << this->year << ", " << MONTHS_NAMES[this->month - 1];
+    const size_t total_weight = CELL_MAX_WIDTH * NUMBER_OF_WEEKDAYS;
+    const size_t header_weight = header.str().length();
+
+    for (size_t i = 0; i < (total_weight - header_weight) / 2; i++)
+	cout << ' ';
+
+    cout << colors::BOLD << header.str() << endl;
+    for (size_t i = 0; i < total_weight; i++)
+	cout << "-";
+    cout << endl;
+
     for (const auto& a : DAYS_ABBR)
     {
 	std::string final_str = a.length() >= CELL_MAX_WIDTH ? a.substr(0, CELL_MAX_WIDTH - 1) : a;
@@ -73,6 +89,7 @@ inline void Calendar::print_header() const
 	    cout << ' ';
     }
     this->print_new_line();
+    cout << colors::RESET;
 }
 
 void Calendar::print() const

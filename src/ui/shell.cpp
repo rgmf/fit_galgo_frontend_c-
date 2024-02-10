@@ -1,4 +1,7 @@
+#include <array>
+#include <bits/types/time_t.h>
 #include <chrono>
+#include <concepts>
 #include <cstddef>
 #include <cstdio>
 #include <format>
@@ -18,6 +21,8 @@
 #include "shell.h"
 #include "calendar.h"
 #include "repr.h"
+#include "colors.h"
+#include "tabular.h"
 
 using std::cin;
 using std::cout;
@@ -52,18 +57,43 @@ inline void enable_echo()
     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 }
 
+inline void print_header(const std::string& header)
+{
+    cout << colors::GREEN << colors::BOLD << header << endl;
+    cout << "--------------------------------------------------------------------------------"
+	 << colors::RESET << endl << endl;
+}
+
+inline void print_value(const std::string& label, const std::string& value)
+{
+    cout << std::left << std::setfill('.') << std::setw(40) << label
+	 << std::right << std::setfill('.') << std::setw(40)
+	 << value << endl;
+}
+
+template <typename T>
+inline void print_optional_stat(
+    const std::string& label, const std::optional<T> stat,
+    std::function<std::string(const T&)> formatter)
+{
+    if (stat.has_value())
+	cout << std::left << std::setfill('.') << std::setw(40) << label
+	     << std::right << std::setfill('.') << std::setw(40)
+	     << formatter(stat.value()) << endl;
+}
+
 void keyboard_handled(std::function<void()> callback)
 {
     char c{};
     do
     {
 	callback();
-	cout << "\033[33m";
+	cout << colors::YELLOW;
 	cout << endl << endl;
 	cout << "--------------------------------------------------" << endl;
 	cout << "q -> exit" << endl;
 	cout << "--------------------------------------------------" << endl;
-	cout << "\033[0m";
+	cout << colors::RESET;
 	c = get_char();
     } while (c != 'q');
 }
@@ -81,13 +111,13 @@ void keyboard_handled(
 	if (action.empty())
 	{
 	    callback(year, month);
-	    cout << "\033[33m";
+	    cout << colors::YELLOW;
 	    cout << endl << endl;
 	    cout << "--------------------------------------------------" << endl;
 	    cout << "n -> next    p -> previous    q -> exit" << endl;
 	    cout << "    :<year> -> jump to the year" << endl;
 	    cout << "--------------------------------------------------" << endl;
-	    cout << "\033[0m";
+	    cout << colors::RESET;
 	}
 
 	c = get_char();
@@ -716,70 +746,8 @@ void ShellSleep::week_stats(const ushort& year, const ushort& month) const
     calendar.print();
 }
 
-void ShellActivities::loop() const
+inline void print_activities_stats(const Activity* a)
 {
-    char option;
-    const std::chrono::time_point now{std::chrono::system_clock::now()};
-    const std::chrono::year_month_day ymd{std::chrono::floor<std::chrono::days>(now)};
-
-    do {
-	system("clear");
-	cout << "ACTIVITIES STATS" << endl;
-	cout << "-------------------------------------------" << endl;
-	cout << "1 - All aggregated stats" << endl;
-	cout << "2 - Stats for a year" << endl;
-	cout << "3 - Stats for a year/month" << endl;
-	cout << "4 - Stats for a year/month/week" << endl;
-	cout << "q - Exit" << endl;
-	cout << "Select an option: ";
-
-	option = get_char();
-
-	switch (option)
-	{
-	case '1':
-	    keyboard_handled([this]() {
-		this->dashboard();
-	    });
-	    break;
-	case '2':
-	    cout << endl;
-	    keyboard_handled([this](const ushort& year, const ushort& month) {
-		this->month_stats(year, month);
-	    }, static_cast<int>(ymd.year()), static_cast<unsigned>(ymd.month()));
-	    break;
-	case '3':
-	    cout << endl;
-	    keyboard_handled([this](const ushort& year, const ushort& month) {
-		this->week_stats(year, month);
-	    }, static_cast<int>(ymd.year()), static_cast<unsigned>(ymd.month()));
-	    break;
-	}
-    } while (option != 'q');
-}
-
-inline void print_distance_activities_stats(const DistanceActivity* a)
-{
-    if (a->total_distance.has_value())
-	cout << std::left << std::setfill('.') << std::setw(30) << "Distance"
-	     << std::right << std::setfill('.') << std::setw(30)
-	     << distance(a->total_distance.value()) << endl;
-    if (a->avg_speed.has_value())
-	cout << std::left << std::setfill('.') << std::setw(30) << "Avg. Speed"
-	     << std::right << std::setfill('.') << std::setw(30)
-	     << speed(a->avg_speed.value()) << endl;
-    if (a->max_speed.has_value())
-	cout << std::left << std::setfill('.') << std::setw(30) << "Max. Speed"
-	     << std::right << std::setfill('.') << std::setw(30)
-	     << speed(a->max_speed.value()) << endl;
-    if (a->total_ascent.has_value())
-	cout << std::left << std::setfill('.') << std::setw(30) << "Ascent"
-	     << std::right << std::setfill('.') << std::setw(30)
-	     << elevation(a->total_ascent.value()) << endl;
-    if (a->total_descent.has_value())
-	cout << std::left << std::setfill('.') << std::setw(30) << "Descent"
-	     << std::right << std::setfill('.') << std::setw(30)
-	     << elevation(a->total_descent.value()) << endl;
     if (a->total_calories.has_value())
 	cout << std::left << std::setfill('.') << std::setw(30) << "Total Calories"
 	     << std::right << std::setfill('.') << std::setw(30)
@@ -822,36 +790,65 @@ inline void print_distance_activities_stats(const DistanceActivity* a)
 	     << unit(a->total_anaerobic_training_effect.value()) << endl;
 }
 
-inline void print_activities_stats(const std::string& h, const std::map<std::string, std::unique_ptr<Activity>>& activities)
+inline void print_distance_activities_stats(const DistanceActivity* a)
 {
-    cout << h << endl;
-    cout << "-----------------------------------------------------" << endl;
-    for (const auto& [sport, a] : activities)
+    if (a->total_distance.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Distance"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << distance(a->total_distance.value()) << endl;
+    if (a->avg_speed.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Avg. Speed"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << speed(a->avg_speed.value()) << endl;
+    if (a->max_speed.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Max. Speed"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << speed(a->max_speed.value()) << endl;
+    if (a->total_ascent.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Ascent"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << elevation(a->total_ascent.value()) << endl;
+    if (a->total_descent.has_value())
+	cout << std::left << std::setfill('.') << std::setw(30) << "Descent"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << elevation(a->total_descent.value()) << endl;
+
+    print_activities_stats(a);
+}
+
+inline void print_sets(const std::vector<Set>& sets)
+{
+    for (auto const& set : sets)
     {
-	cout << std::left << std::setfill('.') << std::setw(30) << "Name"
-	     << std::right << std::setfill('.') << std::setw(30)
-	     << a->sport_profile_name << endl;
-	cout << std::left << std::setfill('.') << std::setw(30) << "Type ID"
-	     << std::right << std::setfill('.') << std::setw(30)
-	     << a->get_id() << endl;
-	cout << std::left << std::setfill('.') << std::setw(30) << "Activity"
-	     << std::right << std::setfill('.') << std::setw(30)
-	     << a->sport << " (" << a->sub_sport << ")" << endl;
-	if (a->total_elapsed_time.has_value())
-	{
-	    cout << std::left << std::setfill('.') << std::setw(30) << "Total elapsed time"
-		 << std::right << std::setfill('.') << std::setw(30)
-		 << time(a->total_elapsed_time.value()) << endl;
-	}
-	if (auto distanceActivity = dynamic_cast<const DistanceActivity*>(a.get()))
-	    print_distance_activities_stats(distanceActivity);
-	cout << endl;
+	print_value("Timestamp", time(set.timestamp));
     }
+}
+
+inline void print_sets_activities_stats(const SetsActivity* a)
+{
+    if (!a->sets.empty())
+	print_sets(a->sets);
+    print_activities_stats(a);
+}
+
+inline void print_splits(const std::vector<Split>& splits)
+{
+    for (auto const& split : splits)
+    {
+	print_value("Split Type", split.split_type);
+    }
+}
+
+inline void print_splits_activities_stats(const SplitsActivity* a)
+{
+    if (!a->splits.empty())
+	print_splits(a->splits);
+    print_activities_stats(a);
 }
 
 inline void print_aggregated_stats(const AggregatedStats& stats)
 {
-    const auto& a = stats.get_aggregated_stats();
+    const auto& a = stats.get_stats();
 
     cout << std::left << std::setfill('.') << std::setw(30) << "Number of activities"
 	 << std::right << std::setfill('.') << std::setw(30)
@@ -944,7 +941,224 @@ inline void print_aggregated_stats(const AggregatedStats& stats)
 	     << unit(a->total_anaerobic_training_effect.value()) << endl;
 }
 
-void ShellActivities::dashboard() const
+ShellActivities::ShellActivities(const ActivitiesData& activities_data)
+{
+    const std::chrono::time_point now{std::chrono::system_clock::now()};
+    const std::chrono::year_month_day ymd{std::chrono::floor<std::chrono::days>(now)};
+
+    year = static_cast<int>(ymd.year());
+    month = static_cast<unsigned>(ymd.month());
+    data = activities_data;
+}
+
+void ShellActivities::loop()
+{
+    char c{};
+    std::string action{};
+    std::function<void()> callback = std::bind(&ShellActivities::month_stats, this);
+
+    do
+    {
+	if (action.empty())
+	{
+	    system("clear");
+	    switch (c)
+	    {
+	    case 'd':
+		callback = std::bind(&ShellActivities::month_stats, this);
+		break;
+	    case 'y':
+		callback = std::bind(&ShellActivities::year_stats, this);
+		break;
+	    case 'a':
+		callback = std::bind(&ShellActivities::all_times_aggregated_stats, this);
+		break;
+	    }
+
+	    callback();
+
+	    cout << colors::YELLOW;
+	    cout << endl << endl;
+	    cout << "--------------------------------------------------------------------------------" << endl;
+	    cout << "n -> next    p -> previous    q -> exit" << endl << endl;
+	    cout << "Options Menu" << endl;
+	    cout << "    d -> Dashboard" << endl;
+	    cout << "    y -> Year Aggregated Stats" << endl;
+	    cout << "    a -> All Times Aggregated Stats" << endl << endl;
+	    cout << "Command Actions" << endl;
+	    cout << "    :<year> -> jump to the year" << endl;
+	    cout << "--------------------------------------------------------------------------------" << endl;
+	    cout << colors::RESET;
+	}
+
+	c = get_char();
+	
+	if (action.empty())
+	{
+	    switch (c)
+	    {
+	    case 'n':
+		if (month < 12 && month >= 1)
+		{
+		    month++;
+		}
+		else
+		{
+		    month = 1;
+		    year++;
+		}
+		break;
+	    case 'p':
+		if (month <= 12 && month > 1)
+		{
+		    month--;
+		}
+		else
+		{
+		    month = 12;
+		    year--;
+		}
+		break;
+	    case ':':
+		action = ":";
+		break;
+	    }
+	}
+	else
+	{
+	    if (c == 27)
+	    {
+		action = {};
+	    }
+	    else if (c >= '0' && c <= '9')
+	    {
+		action += c;
+	    }
+	    else if (c == 13)
+	    {
+		int new_year = std::atoi(action.substr(1, action.length() - 1).c_str());
+		year = new_year > 0 ? new_year : year;
+		action = {};
+	    }
+	}
+    } while (c != 'q');
+}
+
+void ShellActivities::month_stats() const
+{
+    std::ostringstream oss;
+    oss << "ACTIVITIES: MONTH DASHBOARD - " << year << ", " << MONTHS_NAMES[month - 1];
+    print_header(oss.str());
+
+    auto stats = AggregatedStats(year, month, this->data.activities);
+    if (stats.empty())
+    {
+	cout << "There are not data for this date" << endl;
+	return;
+    }
+
+    print_calendar();
+
+    cout << endl;
+    
+    const auto& aggregated = stats.get_stats();
+
+    print_optional_stat<float>("Training Load Peak", aggregated->training_load_peak, value);
+    print_optional_stat<float>("Total Training Effect", aggregated->total_training_effect, value);
+    print_optional_stat<float>(
+	"Total Anaerobic Training Effect", aggregated->total_anaerobic_training_effect, value);
+
+    cout << endl;
+
+    auto summary = Tabular<3>({"Distance", "Work Time", "Calories"});
+    summary.append_row({
+	    aggregated->total_distance.has_value() ? distance(aggregated->total_distance.value()) : "-",
+	    aggregated->total_work_time.has_value() ? time(aggregated->total_work_time.value()) : "-",
+	    aggregated->total_calories.has_value() ? calories(aggregated->total_calories.value()) : "-"});
+    summary.print();
+}
+
+void ShellActivities::year_stats() const
+{
+    std::ostringstream oss;
+    oss << "ACTIVITIES: YEAR DASHBOARD - " << year;
+    print_header(oss.str());
+
+    auto stats = AggregatedStats(year, this->data.activities);
+    if (stats.empty())
+    {
+	cout << "There are not data for this date" << endl;
+	return;
+    }
+
+    const auto& aggregated = stats.get_stats();
+
+    print_value("Number of activities", std::to_string(stats.get_count()));
+
+    cout << endl;
+
+    print_optional_stat<float>("Training Load Peak", aggregated->training_load_peak, value);
+    print_optional_stat<float>("Total Training Effect", aggregated->total_training_effect, value);
+    print_optional_stat<float>(
+	"Total Anaerobic Training Effect", aggregated->total_anaerobic_training_effect, value);
+
+    cout << endl;
+
+    auto summary = Tabular<3>({"Distance", "Work Time", "Calories"});
+    summary.append_row({
+	    aggregated->total_distance.has_value() ? distance(aggregated->total_distance.value()) : "-",
+	    aggregated->total_work_time.has_value() ? time(aggregated->total_work_time.value()) : "-",
+	    aggregated->total_calories.has_value() ? calories(aggregated->total_calories.value()) : "-"});
+    summary.print();
+
+    cout << endl;
+
+    auto sport_stats = SportStats(year, this->data.activities);
+    for (const auto& [sport, s_stats] : sport_stats.get_stats())
+    {
+	cout << colors::BOLD << sport << colors::RESET << endl;
+	if (auto distance_a = dynamic_cast<const DistanceActivity*>(s_stats.get_stats().get()))
+	    print_distance_activities_stats(distance_a);
+	else if (auto sets_a = dynamic_cast<const SetsActivity*>(s_stats.get_stats().get()))
+	    print_sets_activities_stats(sets_a);
+	else if (auto splits_a = dynamic_cast<const SplitsActivity*>(s_stats.get_stats().get()))
+	    print_splits_activities_stats(splits_a);
+	else
+	    print_activities_stats(s_stats.get_stats().get());
+	cout << endl;
+    }
+}
+
+/*
+inline void print_activities_stats(const std::string& h, const std::map<std::string, std::unique_ptr<Activity>>& activities)
+{
+    cout << h << endl;
+    cout << "-----------------------------------------------------" << endl;
+    for (const auto& [sport, a] : activities)
+    {
+	cout << std::left << std::setfill('.') << std::setw(30) << "Name"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << a->sport_profile_name << endl;
+	cout << std::left << std::setfill('.') << std::setw(30) << "Type ID"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << a->get_id() << endl;
+	cout << std::left << std::setfill('.') << std::setw(30) << "Activity"
+	     << std::right << std::setfill('.') << std::setw(30)
+	     << a->sport << " (" << a->sub_sport << ")" << endl;
+	if (a->total_elapsed_time.has_value())
+	{
+	    cout << std::left << std::setfill('.') << std::setw(30) << "Total elapsed time"
+		 << std::right << std::setfill('.') << std::setw(30)
+		 << time(a->total_elapsed_time.value()) << endl;
+	}
+	if (auto distanceActivity = dynamic_cast<const DistanceActivity*>(a.get()))
+	    print_distance_activities_stats(distanceActivity);
+	cout << endl;
+    }
+}
+*/
+
+void ShellActivities::all_times_aggregated_stats() const
 {
     system("clear");
     cout << "ACTIVITIES STATS" << endl;
@@ -960,13 +1174,12 @@ void ShellActivities::dashboard() const
     print_aggregated_stats(stats);
 }
 
-void ShellActivities::month_stats(const ushort& year, const ushort& month) const
+/*void ShellActivities::month_stats(const ushort& year, const ushort& month) const
 {
     system("clear");
     cout << "MONTHLY ACTIVITIES STATS FOR " << year << ", " << MONTHS_NAMES[month - 1] << endl;
     cout << "=====================================================" << endl;
 
-    /*
     auto itr = std::find_if(
 	this->data.activities.cbegin(),
 	this->data.activities.cend(),
@@ -1005,16 +1218,10 @@ void ShellActivities::month_stats(const ushort& year, const ushort& month) const
     }
 
     print_activities_stats(MONTHS_NAMES[month - 1], activities);
-    */
-}
+    }*/
 
-void ShellActivities::week_stats(const ushort& year, const ushort& month) const
+void ShellActivities::print_calendar() const
 {
-    system("clear");
-    cout << MONTHS_NAMES[month - 1] << ", " << year << endl;
-    cout << "=====================================================" << endl;
-
-    /*
     Calendar calendar{year, month};
     auto first_wd_ymd = calendar.get_first_wd_ymd();
     auto last_wd_ymd = calendar.get_last_wd_ymd();
@@ -1022,7 +1229,7 @@ void ShellActivities::week_stats(const ushort& year, const ushort& month) const
     auto itr = std::find_if(
 	this->data.activities.cbegin(),
 	this->data.activities.cend(),
-	[year, month, first_wd_ymd](const auto& item) {
+	[this, first_wd_ymd](const auto& item) {
 	    return item.first.ymd() == first_wd_ymd ||
 		(item.first.year() == year && item.first.month() == month);
 	});
@@ -1046,7 +1253,6 @@ void ShellActivities::week_stats(const ushort& year, const ushort& month) const
     }
 
     calendar.print();
-    */
 }
 
 } // namespace fitgalgo

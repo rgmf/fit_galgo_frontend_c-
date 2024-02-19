@@ -71,6 +71,15 @@ inline void print_value(const std::string& label, const std::string& value)
 	 << value << endl;
 }
 
+inline std::string value_formatted(const std::string& label, const std::string& value)
+{
+    std::stringstream ss;
+    ss << std::left << std::setfill('.') << std::setw(40) << label
+       << std::right << std::setfill('.') << std::setw(40)
+       << value << endl;
+    return ss.str();
+}
+
 template <typename T>
 inline void print_optional_stat(
     const std::string& label, const std::optional<T> stat,
@@ -790,6 +799,93 @@ inline void print_activities_stats(const Activity* a)
 	     << unit(a->total_anaerobic_training_effect.value()) << endl;
 }
 
+inline std::vector<std::string> activities_stats(const Activity* a)
+{
+    std::vector<std::string> result{};
+    
+    if (a->total_calories.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Total Calories"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << calories(a->total_calories.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->avg_temperature.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Avg. Temperature"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << temperature(a->avg_temperature.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->max_temperature.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Max. Temperature"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << temperature(a->max_temperature.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->min_temperature.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Min. Temperature"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << temperature(a->min_temperature.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->avg_respiration_rate.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Avg. Respiration Rate"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << unit(a->avg_respiration_rate.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->max_respiration_rate.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Max. Respiration Rate"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << unit(a->max_respiration_rate.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->min_respiration_rate.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Min. Respiration Rate"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << unit(a->min_respiration_rate.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->training_load_peak.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Training Load Peak"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << unit(a->training_load_peak.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->total_training_effect.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Total Training Effect"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << unit(a->total_training_effect.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->total_anaerobic_training_effect.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Total Anaerobic Training Effect"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << unit(a->total_anaerobic_training_effect.value());
+	result.emplace_back(ss.str());
+    }
+    return result;
+}
+
 inline void print_distance_activities_stats(const DistanceActivity* a)
 {
     if (a->total_distance.has_value())
@@ -816,6 +912,56 @@ inline void print_distance_activities_stats(const DistanceActivity* a)
     print_activities_stats(a);
 }
 
+inline std::vector<std::string> distance_activities_stats(const DistanceActivity* a)
+{
+    std::vector<std::string> result{};
+    if (a->total_distance.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Distance"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << distance(a->total_distance.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->avg_speed.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Avg. Speed"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << speed(a->avg_speed.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->max_speed.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Max. Speed"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << speed(a->max_speed.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->total_ascent.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Ascent"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << elevation(a->total_ascent.value());
+	result.emplace_back(ss.str());
+    }
+    if (a->total_descent.has_value())
+    {
+	std::stringstream ss;
+	ss << std::left << std::setfill('.') << std::setw(30) << "Descent"
+	   << std::right << std::setfill('.') << std::setw(30)
+	   << elevation(a->total_descent.value());
+	result.emplace_back(ss.str());
+    }
+
+    auto as_res = activities_stats(a);
+    result.insert(result.cend(), as_res.cbegin(), as_res.cend());
+
+    return result;
+}
+
 inline void print_sets(const std::vector<Set>& sets)
 {
     for (auto const& set : sets)
@@ -824,11 +970,34 @@ inline void print_sets(const std::vector<Set>& sets)
     }
 }
 
+inline std::vector<std::string> sets_formatted(const std::vector<Set>& sets)
+{
+    std::vector<std::string> result{};
+    for (auto const& set : sets)
+    {
+	result.emplace_back(value_formatted("Timestamp", time(set.timestamp)));
+    }
+    return result;
+}
+
 inline void print_sets_activities_stats(const SetsActivity* a)
 {
     if (!a->sets.empty())
 	print_sets(a->sets);
     print_activities_stats(a);
+}
+
+inline std::vector<std::string> sets_activities_stats(const SetsActivity* a)
+{
+    std::vector<std::string> result{};
+    
+    if (!a->sets.empty())
+	result = sets_formatted(a->sets);
+
+    auto as_res = activities_stats(a);
+    result.insert(result.cend(), as_res.cbegin(), as_res.cend());
+
+    return result;
 }
 
 inline void print_splits(const std::vector<Split>& splits)
@@ -839,11 +1008,34 @@ inline void print_splits(const std::vector<Split>& splits)
     }
 }
 
+inline std::vector<std::string> splits_formatted(const std::vector<Split>& splits)
+{
+    std::vector<std::string> result{};
+    for (auto const& split : splits)
+    {
+	result.emplace_back(value_formatted("Split Type", split.split_type));
+    }
+    return result;
+}
+
 inline void print_splits_activities_stats(const SplitsActivity* a)
 {
     if (!a->splits.empty())
 	print_splits(a->splits);
     print_activities_stats(a);
+}
+
+inline std::vector<std::string> splits_activities_stats(const SplitsActivity* a)
+{
+    std::vector<std::string> result{};
+    
+    if (!a->splits.empty())
+	result = splits_formatted(a->splits);
+
+    auto as_res = activities_stats(a);
+    result.insert(result.cend(), as_res.cbegin(), as_res.cend());
+
+    return result;
 }
 
 inline void print_aggregated_stats(const AggregatedStats& stats)
@@ -1070,8 +1262,8 @@ void ShellActivities::month_stats() const
 
     cout << endl;
 
-    auto summary = Tabular<3>({"Distance", "Work Time", "Calories"});
-    summary.append_row({
+    auto summary = Tabular({"Distance", "Work Time", "Calories"});
+    summary.add_row({
 	    aggregated->total_distance.has_value() ? distance(aggregated->total_distance.value()) : "-",
 	    aggregated->total_work_time.has_value() ? time(aggregated->total_work_time.value()) : "-",
 	    aggregated->total_calories.has_value() ? calories(aggregated->total_calories.value()) : "-"});
@@ -1104,8 +1296,8 @@ void ShellActivities::year_stats() const
 
     cout << endl;
 
-    auto summary = Tabular<3>({"Distance", "Work Time", "Calories"});
-    summary.append_row({
+    auto summary = Tabular({"Distance", "Work Time", "Calories"});
+    summary.add_row({
 	    aggregated->total_distance.has_value() ? distance(aggregated->total_distance.value()) : "-",
 	    aggregated->total_work_time.has_value() ? time(aggregated->total_work_time.value()) : "-",
 	    aggregated->total_calories.has_value() ? calories(aggregated->total_calories.value()) : "-"});
@@ -1113,9 +1305,20 @@ void ShellActivities::year_stats() const
 
     cout << endl;
 
+    auto tabular = Tabular();
     auto sport_stats = SportStats(year, this->data.activities);
     for (const auto& [sport, s_stats] : sport_stats.get_stats())
     {
+	tabular.add_header(sport);
+	if (auto distance_a = dynamic_cast<const DistanceActivity*>(s_stats.get_stats().get()))
+	    tabular.add_values(sport, distance_activities_stats(distance_a));
+	else if (auto sets_a = dynamic_cast<const SetsActivity*>(s_stats.get_stats().get()))
+	    tabular.add_values(sport, sets_activities_stats(sets_a));
+	else if (auto splits_a = dynamic_cast<const SplitsActivity*>(s_stats.get_stats().get()))
+	    tabular.add_values(sport, splits_activities_stats(splits_a));
+	else
+	    tabular.add_values(sport, activities_stats(s_stats.get_stats().get()));
+	/*
 	cout << colors::BOLD << sport << colors::RESET << endl;
 	if (auto distance_a = dynamic_cast<const DistanceActivity*>(s_stats.get_stats().get()))
 	    print_distance_activities_stats(distance_a);
@@ -1126,7 +1329,9 @@ void ShellActivities::year_stats() const
 	else
 	    print_activities_stats(s_stats.get_stats().get());
 	cout << endl;
+	*/
     }
+    tabular.print();
 }
 
 /*

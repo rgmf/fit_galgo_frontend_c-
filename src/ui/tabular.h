@@ -6,6 +6,7 @@
 #include <vector>
 #include <iostream>
 
+#include "../utils/string.h"
 #include "colors.h"
 
 using std::cout;
@@ -14,20 +15,20 @@ using std::endl;
 namespace fitgalgo
 {
 
-const size_t COL_MAX_WIDTH = 20;
+const size_t COL_MIN_WIDTH = 20;
 
 class Tabular
 {
 private:
     std::map<std::string, std::vector<std::string>> values;
 
-    inline void print_header() const
+    inline void print_header(const size_t& w) const
     {
 	cout << colors::BOLD << '|';
 	for (const auto& value : values)
 	{
-	    cout << value.first;
-	    for (size_t i = value.first.length(); i < COL_MAX_WIDTH; i++)
+	    cout << ' ' << value.first << ' ';
+	    for (size_t i = fitgalgo::mb_strlen(value.first) + 2; i < w; i++)
 	    {
 		cout << ' ';
 	    }
@@ -36,14 +37,14 @@ private:
 	cout << colors::RESET << endl;
     }
 
-    inline void print_separator() const
+    inline void print_separator(const size_t& w) const
     {
 	cout << '+';
 	for (size_t i = 0; i < values.size(); i++)
 	{
-	    for (size_t j = 0; j < COL_MAX_WIDTH; j++)
+	    for (size_t j = 0; j < w; j++)
 	    {
-		cout << "-";
+		cout << '-';
 	    }
 	    cout << '+';
 	}
@@ -87,9 +88,14 @@ public:
     {
 	bool has_items = true;
 	size_t idx = 0;
-	
-	print_header();
-	print_separator();
+	size_t width = COL_MIN_WIDTH;
+
+	for (const auto& [h, v] : values)
+	    for (const auto& s : v)
+		width = fitgalgo::mb_strlen(s) + 2 > width ? fitgalgo::mb_strlen(s) + 2 : width;
+
+	print_header(width);
+	print_separator(width);
 
 	while (has_items)
 	{
@@ -101,9 +107,9 @@ public:
 		{
 		    has_items = true;
 
-		    cout << '|';
-		    cout << value.second.at(idx);
-		    for (size_t i = value.second.at(idx).length(); i < COL_MAX_WIDTH; i++)
+		    cout << '|'
+			 << ' ' << value.second.at(idx) << ' ';
+		    for (size_t i = fitgalgo::mb_strlen(value.second.at(idx)) + 2; i < width; i++)
 		    {
 			cout << ' ';
 		    }
@@ -116,7 +122,7 @@ public:
 	    idx++;
 	}
 
-	print_separator();
+	print_separator(width);
     }
 };
 

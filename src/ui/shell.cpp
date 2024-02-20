@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <termios.h>
 
+#include "../utils/string.h"
 #include "../core/api.h"
 #include "../core/stats.h"
 #include "shell.h"
@@ -71,13 +72,21 @@ inline void print_value(const std::string& label, const std::string& value)
 	 << value << endl;
 }
 
+inline std::string value_formatted(const std::string& label, const std::string& value, const size_t& w)
+{
+    size_t fill = w - (fitgalgo::mb_strlen(label) + fitgalgo::mb_strlen(value));
+
+    std::stringstream ss;
+    ss << label;
+    for (size_t i = 0; i < fill; i++)
+	ss << '.';
+    ss << value;
+    return ss.str();
+}
+
 inline std::string value_formatted(const std::string& label, const std::string& value)
 {
-    std::stringstream ss;
-    ss << std::left << std::setfill('.') << std::setw(40) << label
-       << std::right << std::setfill('.') << std::setw(40)
-       << value << endl;
-    return ss.str();
+    return value_formatted(label, value, 40);
 }
 
 template <typename T>
@@ -804,85 +813,26 @@ inline std::vector<std::string> activities_stats(const Activity* a)
     std::vector<std::string> result{};
     
     if (a->total_calories.has_value())
-    {
-	std::stringstream ss;
-	ss << std::left << std::setfill('.') << std::setw(30) << "Total Calories"
-	   << std::right << std::setfill('.') << std::setw(30)
-	   << calories(a->total_calories.value());
-	result.emplace_back(ss.str());
-    }
+	result.emplace_back(value_formatted("Calories", calories(a->total_calories.value()), 30));
     if (a->avg_temperature.has_value())
-    {
-	std::stringstream ss;
-	ss << std::left << std::setfill('.') << std::setw(30) << "Avg. Temperature"
-	   << std::right << std::setfill('.') << std::setw(30)
-	   << temperature(a->avg_temperature.value());
-	result.emplace_back(ss.str());
-    }
+	result.emplace_back(value_formatted("Avg Temp", temperature(a->avg_temperature.value()), 30));
     if (a->max_temperature.has_value())
-    {
-	std::stringstream ss;
-	ss << std::left << std::setfill('.') << std::setw(30) << "Max. Temperature"
-	   << std::right << std::setfill('.') << std::setw(30)
-	   << temperature(a->max_temperature.value());
-	result.emplace_back(ss.str());
-    }
+	result.emplace_back(value_formatted("Max Temp", temperature(a->max_temperature.value()), 30));
     if (a->min_temperature.has_value())
-    {
-	std::stringstream ss;
-	ss << std::left << std::setfill('.') << std::setw(30) << "Min. Temperature"
-	   << std::right << std::setfill('.') << std::setw(30)
-	   << temperature(a->min_temperature.value());
-	result.emplace_back(ss.str());
-    }
+	result.emplace_back(value_formatted("Min Temp", temperature(a->min_temperature.value()), 30));
     if (a->avg_respiration_rate.has_value())
-    {
-	std::stringstream ss;
-	ss << std::left << std::setfill('.') << std::setw(30) << "Avg. Respiration Rate"
-	   << std::right << std::setfill('.') << std::setw(30)
-	   << unit(a->avg_respiration_rate.value());
-	result.emplace_back(ss.str());
-    }
+	result.emplace_back(value_formatted("Avg Resp", value(a->avg_respiration_rate.value()), 30));
     if (a->max_respiration_rate.has_value())
-    {
-	std::stringstream ss;
-	ss << std::left << std::setfill('.') << std::setw(30) << "Max. Respiration Rate"
-	   << std::right << std::setfill('.') << std::setw(30)
-	   << unit(a->max_respiration_rate.value());
-	result.emplace_back(ss.str());
-    }
+	result.emplace_back(value_formatted("Max Resp", value(a->max_respiration_rate.value()), 30));
     if (a->min_respiration_rate.has_value())
-    {
-	std::stringstream ss;
-	ss << std::left << std::setfill('.') << std::setw(30) << "Min. Respiration Rate"
-	   << std::right << std::setfill('.') << std::setw(30)
-	   << unit(a->min_respiration_rate.value());
-	result.emplace_back(ss.str());
-    }
+	result.emplace_back(value_formatted("Min Resp", value(a->min_respiration_rate.value()), 30));
     if (a->training_load_peak.has_value())
-    {
-	std::stringstream ss;
-	ss << std::left << std::setfill('.') << std::setw(30) << "Training Load Peak"
-	   << std::right << std::setfill('.') << std::setw(30)
-	   << unit(a->training_load_peak.value());
-	result.emplace_back(ss.str());
-    }
+	result.emplace_back(value_formatted("Load Peak", value(a->training_load_peak.value()), 30));
     if (a->total_training_effect.has_value())
-    {
-	std::stringstream ss;
-	ss << std::left << std::setfill('.') << std::setw(30) << "Total Training Effect"
-	   << std::right << std::setfill('.') << std::setw(30)
-	   << unit(a->total_training_effect.value());
-	result.emplace_back(ss.str());
-    }
+	result.emplace_back(value_formatted("Train Effect", value(a->total_training_effect.value()), 30));
     if (a->total_anaerobic_training_effect.has_value())
-    {
-	std::stringstream ss;
-	ss << std::left << std::setfill('.') << std::setw(30) << "Total Anaerobic Training Effect"
-	   << std::right << std::setfill('.') << std::setw(30)
-	   << unit(a->total_anaerobic_training_effect.value());
-	result.emplace_back(ss.str());
-    }
+	result.emplace_back(
+	    value_formatted("Anaerobic Effect", value(a->total_anaerobic_training_effect.value()), 30));
     return result;
 }
 

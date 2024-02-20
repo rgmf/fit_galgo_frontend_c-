@@ -1,6 +1,7 @@
 #include "stats.h"
 #include "api.h"
 #include <chrono>
+#include <concepts>
 #include <memory>
 
 namespace fitgalgo
@@ -14,9 +15,9 @@ AggregatedStats::AggregatedStats(const std::map<DateIdx, std::unique_ptr<Activit
 	std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now()));
     to = std::chrono::year_month_day();
 
-    for (const auto& [idx, activty] : activities)
+    for (const auto& [idx, a] : activities)
     {
-	merge(activty);
+	merge(a);
 	count++;
 	if (idx.ymd() < from)
 	    from = idx.ymd();
@@ -79,7 +80,42 @@ AggregatedStats::AggregatedStats(const AggregatedStats& other)
     : from(other.from), to(other.to), count(other.count)
 {
     if (other.activity)
-	activity = std::make_unique<Activity>(*other.activity);
+    {
+	if (auto distance_a = dynamic_cast<const DistanceActivity*>(other.activity.get()))
+	    activity = std::make_unique<DistanceActivity>(*distance_a);
+	else if (auto sets_a = dynamic_cast<const SetsActivity*>(other.activity.get()))
+	    activity = std::make_unique<SetsActivity>(*sets_a);
+	else if (auto splits_a = dynamic_cast<const SplitsActivity*>(other.activity.get()))
+	    activity = std::make_unique<SplitsActivity>(*splits_a);
+	else
+	    activity = std::make_unique<Activity>(*other.activity);
+    }
+}
+
+AggregatedStats& AggregatedStats::operator=(const AggregatedStats& other)
+{
+    if (this != &other)
+    {
+	from = other.from;
+	to = other.to;
+	count = other.count;
+
+	if (other.activity)
+	{
+	    if (auto distance_a = dynamic_cast<const DistanceActivity*>(other.activity.get()))
+		activity = std::make_unique<DistanceActivity>(*distance_a);
+	    else if (auto sets_a = dynamic_cast<const SetsActivity*>(other.activity.get()))
+		activity = std::make_unique<SetsActivity>(*sets_a);
+	    else if (auto splits_a = dynamic_cast<const SplitsActivity*>(other.activity.get()))
+		activity = std::make_unique<SplitsActivity>(*splits_a);
+	    else
+		activity = std::make_unique<Activity>(*other.activity);
+	}
+	else
+	    activity.reset();
+    }
+
+    return *this;
 }
 
 bool AggregatedStats::empty() const
@@ -211,9 +247,29 @@ SportStats::SportStats(
     auto activities_by_sport = std::map<std::string, std::map<DateIdx, std::unique_ptr<Activity>>>();
     while (itr != activities.end() && itr->first.year() == year)
     {
-	std::unique_ptr<Activity> new_activity = std::make_unique<Activity>(*itr->second);
-	activities_by_sport[itr->second->sport][itr->first] = std::move(new_activity);
-	
+	std::unique_ptr<Activity> new_activity;
+
+        switch (itr->second->get_id())
+	{
+	case ActivityType::DISTANCE:
+	    new_activity = std::make_unique<DistanceActivity>(
+		dynamic_cast<DistanceActivity&>(*itr->second));
+	    break;
+	case ActivityType::SETS:
+	    new_activity = std::make_unique<SetsActivity>(
+		dynamic_cast<SetsActivity&>(*itr->second));
+	    break;
+	case ActivityType::SPLITS:
+	    new_activity = std::make_unique<SplitsActivity>(
+		dynamic_cast<SplitsActivity&>(*itr->second));
+	    break;
+	default:
+	    new_activity = std::make_unique<Activity>(*itr->second);
+	    break;
+	}
+
+        activities_by_sport[itr->second->sport][itr->first] = std::move(new_activity);
+
 	itr++;
     }
 

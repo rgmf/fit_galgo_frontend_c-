@@ -1,3 +1,4 @@
+#include <utility>
 #ifndef _ES_RGMF_UI_TABULAR_H
 #define _ES_RGMF_UI_TABULAR_H 1
 
@@ -21,14 +22,15 @@ class Tabular
 {
 private:
     std::map<std::string, std::vector<std::string>> values;
+    std::vector<std::string> insertion_order;
 
     inline void print_header(const size_t& w) const
     {
 	cout << colors::BOLD << '|';
-	for (const auto& value : values)
+	for (const auto& header : insertion_order)
 	{
-	    cout << ' ' << value.first << ' ';
-	    for (size_t i = fitgalgo::mb_strlen(value.first) + 2; i < w; i++)
+	    cout << ' ' << header << ' ';
+	    for (size_t i = fitgalgo::mb_strlen(header) + 2; i < w; i++)
 	    {
 		cout << ' ';
 	    }
@@ -52,26 +54,27 @@ private:
     }
 
 public:
-    Tabular() : values{} {};
+    Tabular() : values{}, insertion_order{} {};
     Tabular(const std::vector<std::string>& headers)
     {
 	values = std::map<std::string, std::vector<std::string>>();
 	for (const auto& h : headers)
+	{
+	    insertion_order.emplace_back(h);
 	    values[h] = std::vector<std::string>();
+	}
     }
 
     void add_header(const std::string& header)
     {
+	insertion_order.emplace_back(header);
 	values[header] = std::vector<std::string>();
     }
 
-    void add_row(const std::vector<std::string>& row)
+    void add_row(const std::vector<std::pair<std::string, std::string>>& row)
     {
-	auto row_itr = row.begin();
-	for (auto i = values.begin(); i != values.end() && row_itr != row.end(); i++, row_itr++)
-	{
-	    i->second.emplace_back(*row_itr);
-	}
+	for (const auto& [k, v] : row)
+	    values[k].emplace_back(v);
     }
 
     void add_value(const std::string& header, const std::string& value)
@@ -101,15 +104,16 @@ public:
 	{
 	    has_items = false;
 
-	    for (const auto& value : values)
+	    for (const auto& k : insertion_order)
 	    {
-		if (value.second.size() > idx)
+		const auto& value = values.at(k);
+		if (value.size() > idx)
 		{
 		    has_items = true;
 
 		    cout << '|'
-			 << ' ' << value.second.at(idx) << ' ';
-		    for (size_t i = fitgalgo::mb_strlen(value.second.at(idx)) + 2; i < width; i++)
+			 << ' ' << value.at(idx) << ' ';
+		    for (size_t i = fitgalgo::mb_strlen(value.at(idx)) + 2; i < width; i++)
 		    {
 			cout << ' ';
 		    }

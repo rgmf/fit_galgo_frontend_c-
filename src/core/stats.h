@@ -29,22 +29,7 @@ public:
 	const std::map<DateIdx, std::unique_ptr<Activity>>& activities);
 
     AggregatedStats(const AggregatedStats& other);
-    AggregatedStats& operator=(const AggregatedStats& other)
-    {
-        if (this != &other)
-        {
-            from = other.from;
-            to = other.to;
-            count = other.count;
-
-            if (other.activity)
-                activity = std::make_unique<Activity>(*other.activity);
-            else
-                activity.reset();
-        }
-
-        return *this;
-    }
+    AggregatedStats& operator=(const AggregatedStats& other);
 
     bool empty() const;
     const std::unique_ptr<Activity>& get_stats() const;

@@ -87,14 +87,24 @@ inline void print_sleep_stats(const std::string& h, const Sleep& s, const size_t
 
 inline void print_activities_stats(const Activity* a)
 {
+    cout << colors::BOLD << colors::RED;
+    print_optional_stat<float>("Work Time", a->total_work_time, time);
+    cout << colors::RESET << colors::RED;
     print_optional_stat<float>("Elapsed Time", a->total_elapsed_time, time);
     print_optional_stat<float>("Timer Time", a->total_timer_time, time);
-    print_optional_stat<float>("Work Time", a->total_work_time, time);
+
+    cout << colors::RESET << colors::CYAN;
     print_optional_stat<float>("Distance", a->total_distance, elevation);
+
+    cout << colors::RESET << colors::MAGENTA;
     print_optional_stat<float>("Avg Speed", a->avg_speed, elevation);
     print_optional_stat<float>("Max Speed", a->max_speed, elevation);
+
+    cout << colors::RESET << colors::GREEN;
     print_optional_stat<float>("Ascent", a->total_ascent, elevation);
     print_optional_stat<float>("Descent", a->total_descent, elevation);
+
+    cout << colors::RESET;
     print_optional_stat<float>("Total Calories", a->total_calories, calories);
     print_optional_stat<float>("Avg. Temperature", a->avg_temperature, temperature);
     print_optional_stat<float>("Max. Temperature", a->max_temperature, temperature);
@@ -145,12 +155,12 @@ inline void print_aggregated_stats(const AggregatedStats& stats)
     //cout << value_formatted("From date", date(stats.get_from_year_month_day()), 30) << endl;
     //cout << value_formatted("To date", date(stats.get_to_year_month_day()), 30) << endl;
 
+    if (a->total_work_time.has_value())
+	cout << value_formatted("Work Time", time(a->total_work_time.value()), 30) << endl;
     if (a->total_elapsed_time.has_value())
 	cout << value_formatted("Elapsed Time", time(a->total_elapsed_time.value()), 30) << endl;
     if (a->total_timer_time.has_value())
 	cout << value_formatted("Timer Time", time(a->total_timer_time.value()), 30) << endl;
-    if (a->total_work_time.has_value())
-	cout << value_formatted("Work Time", time(a->total_work_time.value()), 30) << endl;
     if (a->total_distance.has_value())
 	cout << value_formatted("Distance", distance(a->total_distance.value()), 30) << endl;
     if (a->avg_speed.has_value())

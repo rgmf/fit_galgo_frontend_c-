@@ -680,15 +680,15 @@ inline std::vector<std::string> activities_stats(const Activity* a)
 {
     std::vector<std::string> result{};
 
+    if (a->total_work_time.has_value())
+	result.emplace_back(
+	    value_formatted("Work Time", time(a->total_work_time.value()), 25));
     if (a->total_elapsed_time.has_value())
 	result.emplace_back(
 	    value_formatted("Elapsed Time", time(a->total_elapsed_time.value()), 25));
     if (a->total_timer_time.has_value())
 	result.emplace_back(
 	    value_formatted("Timer Time", time(a->total_timer_time.value()), 25));
-    if (a->total_work_time.has_value())
-	result.emplace_back(
-	    value_formatted("Work Time", time(a->total_work_time.value()), 25));
     if (a->total_distance.has_value())
 	result.emplace_back(value_formatted("Distance", distance(a->total_distance.value()), 25));
     if (a->avg_speed.has_value())

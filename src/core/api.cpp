@@ -596,6 +596,7 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 	    auto itr_sets = v.FindMember("sets");
 	    if (itr_splits != v.MemberEnd() && itr_splits->value.IsArray())
 	    {
+		float total_work_time = 0;
 		activity = std::make_unique<SplitsActivity>();
 		for (const auto& s : itr_splits->value.GetArray())
 		{
@@ -618,8 +619,6 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 			    split.split_type = itr_st->value.GetString();
 			if (itr_tet != s.MemberEnd() && itr_tet->value.IsFloat())
 			    split.total_elapsed_time = itr_tet->value.GetFloat();
-			if (itr_ttt != s.MemberEnd() && itr_ttt->value.IsFloat())
-			    split.total_timer_time = itr_ttt->value.GetFloat();
 			if (itr_sti != s.MemberEnd() && itr_sti->value.IsFloat())
 			    split.start_time = itr_sti->value.GetFloat();
 			if (itr_ah != s.MemberEnd() && itr_ah ->value.IsInt())
@@ -632,20 +631,29 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 			    split.difficulty = itr_d->value.GetInt();
 			if (itr_di != s.MemberEnd() && itr_di->value.IsInt())
 			    split.result = SplitResult::DISCARDED;
-			else if (itr_r != s.MemberEnd() && itr_r->value.IsInt())
+			if (itr_r != s.MemberEnd() && itr_r->value.IsInt())
 			{
 			    if (itr_r->value.GetInt() == 2) 
 				split.result = SplitResult::ATTEMPTED;
 			    else if (itr_r->value.GetInt() == 3) 
 				split.result = SplitResult::COMPLETED;
 			}
+			if (itr_ttt != s.MemberEnd() && itr_ttt->value.IsFloat())
+			{
+			    split.total_timer_time = itr_ttt->value.GetFloat();
+			    if (split.result == SplitResult::ATTEMPTED || split.result == SplitResult::COMPLETED)
+				total_work_time += split.total_timer_time;
+			}
 
 			(static_cast<SplitsActivity*>(activity.get()))->splits.emplace_back(split);
 		    }
 		}
+		if (total_work_time > 0)
+		    activity->total_work_time = total_work_time;
 	    }
 	    else if (itr_sets != v.MemberEnd() && itr_sets->value.IsArray())
 	    {
+		float total_work_time = 0;
 		activity = std::make_unique<SetsActivity>();
 		for (const auto& s : itr_sets->value.GetArray())
 		{
@@ -677,11 +685,15 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 			    }
 			}
 			if (itr_d != s.MemberEnd() && itr_d->value.IsFloat())
+			{
 			    set.duration = itr_d->value.GetFloat();
+			    if (set.set_type == SetType::ACTIVE)
+				total_work_time += set.duration;
+			}
 			if (itr_r != s.MemberEnd() && itr_r->value.IsInt())
 			    set.repetitions = itr_r->value.GetInt();
 			if (itr_w != s.MemberEnd() && itr_w->value.IsFloat())
-			    set.weight = itr_d->value.GetFloat();
+			    set.weight = itr_w->value.GetFloat();
 			if (itr_sti != s.MemberEnd() && itr_sti->value.IsFloat())
 			    set.start_time = itr_sti->value.GetFloat();
 			if (itr_c != s.MemberEnd() && itr_c->value.IsArray())
@@ -714,6 +726,8 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 			(static_cast<SetsActivity*>(activity.get()))->sets.emplace_back(set);
 		    }
 		}
+		if (total_work_time > 0)
+		    activity->total_work_time = total_work_time;
 	    }
 	    else
 	    {
@@ -789,7 +803,11 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 		    activity->total_elapsed_time = itr_et->value.GetFloat();
 
 		if (itr_tt != itr_session->value.MemberEnd() && itr_tt->value.IsNumber())
+		{
 		    activity->total_timer_time = itr_tt->value.GetFloat();
+		    if (!activity->total_work_time.has_value())
+			activity->total_work_time = activity->total_timer_time;
+		}
 
 		if (itr_td != itr_session->value.MemberEnd() && itr_td->value.IsNumber())
 		    activity->total_distance =itr_td->value.GetFloat();

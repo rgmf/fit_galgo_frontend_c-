@@ -723,55 +723,6 @@ inline std::vector<std::string> activities_stats(const Activity* a)
     return result;
 }
 
-/*
-inline std::vector<std::string> sets_formatted(const std::vector<Set>& sets)
-{
-    std::vector<std::string> result{};
-    for (auto const& set : sets)
-    {
-        result.emplace_back(value_formatted("Timestamp", time(set.timestamp)));
-    }
-    return result;
-}
-
-inline std::vector<std::string> sets_activities_stats(const SetsActivity* a)
-{
-    std::vector<std::string> result{};
-
-    if (!a->sets.empty())
-        result = sets_formatted(a->sets);
-
-    auto as_res = activities_stats(a);
-    result.insert(result.cend(), as_res.cbegin(), as_res.cend());
-
-    return result;
-}
-
-inline std::vector<std::string> splits_formatted(const std::vector<Split>&
-splits)
-{
-    std::vector<std::string> result{};
-    for (auto const& split : splits)
-    {
-        result.emplace_back(value_formatted("Split Type", split.split_type));
-    }
-    return result;
-}
-
-inline std::vector<std::string> splits_activities_stats(const SplitsActivity* a)
-{
-    std::vector<std::string> result{};
-
-    if (!a->splits.empty())
-        result = splits_formatted(a->splits);
-
-    auto as_res = activities_stats(a);
-    result.insert(result.cend(), as_res.cbegin(), as_res.cend());
-
-    return result;
-}
-*/
-
 ShellActivities::ShellActivities(const ActivitiesData& activities_data)
 {
     const std::chrono::time_point now{std::chrono::system_clock::now()};

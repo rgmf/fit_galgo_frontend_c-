@@ -17,7 +17,7 @@ std::string formatted_number(const T& n)
 	mils_pos = res.length() > 3 ? res.length() - 3: 0;
     else
 	mils_pos -= 3;
-    
+
     while (mils_pos > 0)
     {
         res.insert(mils_pos, " ");

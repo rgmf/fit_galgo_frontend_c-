@@ -6,6 +6,10 @@
 namespace fitgalgo
 {
 
+/**
+ * https://en.wikipedia.org/wiki/UTF-8
+ * https://stackoverflow.com/questions/33903342/how-to-ignore-accents-in-a-string-so-it-does-not-alter-its-length
+ */
 inline size_t mb_strlen(const std::string& s)
 {
     auto itr = s.begin();

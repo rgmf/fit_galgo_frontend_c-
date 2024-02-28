@@ -48,7 +48,8 @@ inline void print_value(const std::string& label, const std::string& value)
 inline std::string value_formatted(
     const std::string& label, const std::string& value, const size_t& w = 40)
 {
-    size_t fill = w - (fitgalgo::mb_strlen(label) + fitgalgo::mb_strlen(value));
+    size_t label_value_chars = fitgalgo::mb_strlen(label) + fitgalgo::mb_strlen(value);
+    size_t fill = w > label_value_chars ? w - label_value_chars : 0;
 
     std::stringstream ss;
     ss << label;
@@ -151,48 +152,48 @@ inline void print_aggregated_stats(const AggregatedStats& stats)
 {
     const auto& a = stats.get_stats();
 
-    cout << value_formatted("# Activities", std::to_string(stats.get_count()), 30) << endl;
-    //cout << value_formatted("From date", date(stats.get_from_year_month_day()), 30) << endl;
-    //cout << value_formatted("To date", date(stats.get_to_year_month_day()), 30) << endl;
+    cout << value_formatted("# Activities", std::to_string(stats.get_count()), 40) << endl;
+    cout << value_formatted("From date", date(stats.get_from_year_month_day()), 40) << endl;
+    cout << value_formatted("To date", date(stats.get_to_year_month_day()), 40) << endl;
 
     if (a->total_work_time.has_value())
-	cout << value_formatted("Work Time", time(a->total_work_time.value()), 30) << endl;
+	cout << value_formatted("Work Time", time(a->total_work_time.value()), 40) << endl;
     if (a->total_elapsed_time.has_value())
-	cout << value_formatted("Elapsed Time", time(a->total_elapsed_time.value()), 30) << endl;
+	cout << value_formatted("Elapsed Time", time(a->total_elapsed_time.value()), 40) << endl;
     if (a->total_timer_time.has_value())
-	cout << value_formatted("Timer Time", time(a->total_timer_time.value()), 30) << endl;
+	cout << value_formatted("Timer Time", time(a->total_timer_time.value()), 40) << endl;
     if (a->total_distance.has_value())
-	cout << value_formatted("Distance", distance(a->total_distance.value()), 30) << endl;
+	cout << value_formatted("Distance", distance(a->total_distance.value()), 40) << endl;
     if (a->avg_speed.has_value())
-	cout << value_formatted("Avg Speed", speed(a->avg_speed.value()), 30) << endl;
+	cout << value_formatted("Avg Speed", speed(a->avg_speed.value()), 40) << endl;
     if (a->max_speed.has_value())
-	cout << value_formatted("Max Speed", speed(a->max_speed.value()), 30) << endl;
+	cout << value_formatted("Max Speed", speed(a->max_speed.value()), 40) << endl;
     if (a->total_ascent.has_value())
-	cout << value_formatted("Ascent", elevation(a->total_ascent.value()), 30) << endl;
+	cout << value_formatted("Ascent", elevation(a->total_ascent.value()), 40) << endl;
     if (a->total_descent.has_value())
-	cout << value_formatted("Descent", elevation(a->total_descent.value()), 30) << endl;
+	cout << value_formatted("Descent", elevation(a->total_descent.value()), 40) << endl;
     if (a->total_calories.has_value())
-	cout << value_formatted("Calories", calories(a->total_calories.value()), 30) << endl;
+	cout << value_formatted("Calories", calories(a->total_calories.value()), 40) << endl;
     if (a->avg_temperature.has_value())
-	cout << value_formatted("Avg Temp", temperature(a->avg_temperature.value()), 30) << endl;
+	cout << value_formatted("Avg Temp", temperature(a->avg_temperature.value()), 40) << endl;
     if (a->max_temperature.has_value())
-	cout << value_formatted("Max Temp", temperature(a->max_temperature.value()), 30) << endl;
+	cout << value_formatted("Max Temp", temperature(a->max_temperature.value()), 40) << endl;
     if (a->min_temperature.has_value())
-	cout << value_formatted("Min Temp", temperature(a->min_temperature.value()), 30) << endl;
+	cout << value_formatted("Min Temp", temperature(a->min_temperature.value()), 40) << endl;
     if (a->avg_respiration_rate.has_value())
-	cout << value_formatted("Avg Resp", value(a->avg_respiration_rate.value()), 30) << endl;
+	cout << value_formatted("Avg Resp", value(a->avg_respiration_rate.value()), 40) << endl;
     if (a->max_respiration_rate.has_value())
-	cout << value_formatted("Max Resp", value(a->max_respiration_rate.value()), 30) << endl;
+	cout << value_formatted("Max Resp", value(a->max_respiration_rate.value()), 40) << endl;
     if (a->min_respiration_rate.has_value())
-	cout << value_formatted("Min Resp", value(a->min_respiration_rate.value()), 30) << endl;
+	cout << value_formatted("Min Resp", value(a->min_respiration_rate.value()), 40) << endl;
     if (a->training_load_peak.has_value())
-	cout << value_formatted("Load Peak", value(a->training_load_peak.value()), 30) << endl;
+	cout << value_formatted("Load Peak", value(a->training_load_peak.value()), 40) << endl;
     if (a->total_training_effect.has_value())
-	cout << value_formatted("Train Effect", value(a->total_training_effect.value()), 30)
+	cout << value_formatted("Train Effect", value(a->total_training_effect.value()), 40)
 	     << endl;
     if (a->total_anaerobic_training_effect.has_value())
 	cout << value_formatted(
-	    "Anaerobic Effect", value(a->total_anaerobic_training_effect.value()), 30)
+	    "Anaerobic Effect", value(a->total_anaerobic_training_effect.value()), 40)
 	     << endl;
 }
 

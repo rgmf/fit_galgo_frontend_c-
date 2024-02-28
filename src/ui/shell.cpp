@@ -675,7 +675,6 @@ void ShellSleep::week_stats(const ushort& year, const ushort& month) const
 
     calendar.print();
 }
-
 inline std::vector<std::string> activities_stats(const Activity* a)
 {
     std::vector<std::string> result{};
@@ -738,6 +737,8 @@ void ShellActivities::loop()
     char c{};
     std::string action{};
     std::function<void()> callback = std::bind(&ShellActivities::month_stats, this);
+    std::optional<std::pair<size_t, size_t>> limits = std::pair<size_t, size_t>{1, 12};
+    ushort* next_prev_ref = &month;
 
     do
     {
@@ -747,12 +748,18 @@ void ShellActivities::loop()
 	    switch (c)
 	    {
 	    case 'd':
+		next_prev_ref = &month;
+		limits = std::pair<size_t, size_t>{1, 12};
 		callback = std::bind(&ShellActivities::month_stats, this);
 		break;
 	    case 'y':
+		next_prev_ref = &year;
+		limits = {};
 		callback = std::bind(&ShellActivities::year_stats, this);
 		break;
 	    case 'a':
+		next_prev_ref = nullptr;
+		limits = {};
 		callback = std::bind(&ShellActivities::all_times_aggregated_stats, this);
 		break;
 	    }
@@ -774,31 +781,41 @@ void ShellActivities::loop()
 	}
 
 	c = get_char();
-	
-	if (action.empty())
+
+	if (action.empty() && next_prev_ref != nullptr)
 	{
 	    switch (c)
 	    {
 	    case 'n':
-		if (month < 12 && month >= 1)
+		if (!limits.has_value())
 		{
-		    month++;
+		    (*next_prev_ref)++;
+		}
+		else if (*next_prev_ref >= limits.value().first &&
+			 *next_prev_ref < limits.value().second)
+		{
+		    (*next_prev_ref)++;
 		}
 		else
 		{
-		    month = 1;
-		    year++;
+		    *next_prev_ref = limits.value().first;
+		    year = *next_prev_ref == month ? year + 1 : year;
 		}
 		break;
 	    case 'p':
-		if (month <= 12 && month > 1)
+		if (!limits.has_value())
 		{
-		    month--;
+		    (*next_prev_ref)--;
+		}
+		else if (*next_prev_ref > limits.value().first &&
+			 *next_prev_ref <= limits.value().second)
+		{
+		    (*next_prev_ref)--;
 		}
 		else
 		{
-		    month = 12;
-		    year--;
+		    *next_prev_ref = limits.value().second;
+		    year = *next_prev_ref == month ? year - 1 : year;
 		}
 		break;
 	    case ':':
@@ -873,10 +890,12 @@ void ShellActivities::month_stats() const
 
     auto tabular = Tabular();
     auto sport_stats = SportStats(year, month, this->data.activities);
+    std::string header{};
     for (const auto& [sport, s_stats] : sport_stats.get_stats())
     {
-	tabular.add_header(sport);
-	tabular.add_values(sport, activities_stats(s_stats.get_stats().get()));
+	header = sport + " (" + std::to_string(s_stats.get_count()) + ")";
+	tabular.add_header(header);
+	tabular.add_values(header, activities_stats(s_stats.get_stats().get()));
     }
     tabular.print();
 }
@@ -928,10 +947,12 @@ void ShellActivities::year_stats() const
 
     auto tabular = Tabular();
     auto sport_stats = SportStats(year, this->data.activities);
+    std::string header{};
     for (const auto& [sport, s_stats] : sport_stats.get_stats())
     {
-	tabular.add_header(sport);
-	tabular.add_values(sport, activities_stats(s_stats.get_stats().get()));
+	header = sport + " (" + std::to_string(s_stats.get_count()) + ")";
+	tabular.add_header(header);
+	tabular.add_values(header, activities_stats(s_stats.get_stats().get()));
     }
     tabular.print();
 }
@@ -1021,6 +1042,9 @@ void ShellActivities::print_calendar() const
 	if (itr->second->get_id() == ActivityType::DISTANCE)
 	    s = itr->second->sport_profile_name +
 		" (" + distance(itr->second->total_distance.value()) + ")";
+	else if (itr->second->total_work_time.has_value())
+	    s = itr->second->sport_profile_name +
+		 " (" + time(itr->second->total_work_time.value()) + ")";
 	else
 	    s = itr->second->sport_profile_name +
 		 " (" + time(itr->second->total_elapsed_time.value()) + ")";

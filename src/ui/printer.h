@@ -67,10 +67,8 @@ inline void print_steps_stats(const Steps& s)
     cout << endl;
 }
 
-inline void print_sleep_stats(const std::string& h, const Sleep& s, const size_t& count)
+inline void print_sleep_stats(const Sleep& s, const size_t& count)
 {
-    cout << h << endl;
-    cout << "-----------------------------------------------------" << endl;
     print_value("Sleep Score", unit(s.assessment.overall_sleep_score / count));
     print_value("Deep Score", unit(s.assessment.deep_sleep_score / count));
     print_value("REM Score", unit(s.assessment.rem_sleep_score / count));

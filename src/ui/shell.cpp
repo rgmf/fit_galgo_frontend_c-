@@ -1,33 +1,18 @@
-#include <array>
-#include <bits/types/time_t.h>
-#include <chrono>
-#include <concepts>
-#include <cstddef>
-#include <cstdio>
-#include <format>
-#include <functional>
-#include <memory>
-#include <numeric>
 #include <string>
 #include <iostream>
 #include <sstream>
-#include <filesystem>
 
 #include <unistd.h>
 #include <termios.h>
-#include <utility>
 
-#include "../utils/string.h"
-#include "../core/api.h"
-#include "../core/stats.h"
 #include "shell.h"
 #include "calendar.h"
 #include "repr.h"
 #include "colors.h"
 #include "tabular.h"
 #include "printer.h"
+#include "../core/stats.h"
 
-using std::cin;
 using std::cout;
 using std::endl;
 
@@ -58,100 +43,6 @@ inline void enable_echo()
     tcgetattr(STDIN_FILENO, &tty);
     tty.c_lflag |= ECHO;
     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
-}
-
-void keyboard_handled(std::function<void()> callback)
-{
-    char c{};
-    do
-    {
-	callback();
-	cout << colors::YELLOW;
-	cout << endl << endl;
-	cout << "--------------------------------------------------" << endl;
-	cout << "q -> exit" << endl;
-	cout << "--------------------------------------------------" << endl;
-	cout << colors::RESET;
-	c = get_char();
-    } while (c != 'q');
-}
-
-void keyboard_handled(
-    std::function<void(const ushort&, const ushort&)> callback,
-    ushort year,
-    ushort month)
-{
-    char c{};
-    std::string action{};
-
-    do
-    {
-	if (action.empty())
-	{
-	    callback(year, month);
-	    cout << colors::YELLOW;
-	    cout << endl << endl;
-	    cout << "--------------------------------------------------" << endl;
-	    cout << "n -> next    p -> previous    q -> exit" << endl;
-	    cout << "    :<year> -> jump to the year" << endl;
-	    cout << "--------------------------------------------------" << endl;
-	    cout << colors::RESET;
-	}
-
-	c = get_char();
-
-	if (action.empty())
-	{
-	    switch (c)
-	    {
-	    case 'n': month < 12 && month >= 1 ? month++ : month; break;
-	    case 'p': month <= 12 && month > 1 ? month-- : month; break;
-	    case ':': action = ":"; break;
-	    }
-	}
-	else
-	{
-	    if (c == 27)
-	    {
-		action = {};
-	    }
-	    else if (c >= '0' && c <= '9')
-	    {
-		action += c;
-	    }
-	    else if (c == 13)
-	    {
-		int new_year = std::atoi(action.substr(1, action.length() - 1).c_str());
-		year = new_year > 0 ? new_year : year;
-		action = {};
-	    }
-	}
-
-    } while (c != 'q');
-}
-
-inline ushort ask_for_year()
-{
-    ushort year;
-    do
-    {
-	cout << "Type a year: ";
-	cin >> year;
-    } while (year < 1000 || year > 9999);
-    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    return year;
-}
-
-inline ushort ask_for_month()
-{
-    ushort month;
-    do
-    {
-	cout << "Type a month (1-12): ";
-	cin >> month;
-    } while (month < 1 || month > 12);
-    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    return month;
 }
 
 inline bool Shell::login()
@@ -372,21 +263,11 @@ void Shell::loop()
     } while (option != 'q');
 }
 
-ShellSteps::ShellSteps(const StepsData &steps_data)
-{
-    const std::chrono::time_point now{std::chrono::system_clock::now()};
-    const std::chrono::year_month_day ymd{std::chrono::floor<std::chrono::days>(now)};
-
-    year = static_cast<int>(ymd.year());
-    month = static_cast<unsigned>(ymd.month());
-    data = steps_data;
-}
-
-void ShellSteps::loop()
+void ShellStats::loop()
 {
     char c{};
     std::string action{};
-    std::function<void()> callback = std::bind(&ShellSteps::month_stats, this);
+    std::function<void()> callback = std::bind(&ShellStats::month_stats, this);
     std::optional<std::pair<size_t, size_t>> limits = std::pair<size_t, size_t>{1, 12};
     ushort* next_prev_ref = &month;
 
@@ -400,17 +281,17 @@ void ShellSteps::loop()
 	    case 'd':
 		next_prev_ref = &month;
 		limits = std::pair<size_t, size_t>{1, 12};
-		callback = std::bind(&ShellSteps::month_stats, this);
+		callback = std::bind(&ShellStats::month_stats, this);
 		break;
 	    case 'y':
 		next_prev_ref = &year;
 		limits = {};
-		callback = std::bind(&ShellSteps::year_stats, this);
+		callback = std::bind(&ShellStats::year_stats, this);
 		break;
 	    case 'a':
 		next_prev_ref = nullptr;
 		limits = {};
-		callback = std::bind(&ShellSteps::all_times_stats, this);
+		callback = std::bind(&ShellStats::all_times_stats, this);
 		break;
 	    }
 
@@ -422,8 +303,8 @@ void ShellSteps::loop()
 	    cout << "n -> next    p -> previous    q -> exit" << endl << endl;
 	    cout << "Options Menu" << endl;
 	    cout << "    d -> Dashboard" << endl;
-	    cout << "    y -> Year Aggregated Stats" << endl;
-	    cout << "    a -> All Times Aggregated Stats" << endl << endl;
+	    cout << "    y -> Year Stats" << endl;
+	    cout << "    a -> All Times Stats" << endl << endl;
 	    cout << "Command Actions" << endl;
 	    cout << "    :<year> -> jump to the year" << endl;
 	    cout << "--------------------------------------------------------------------------------" << endl;
@@ -491,6 +372,16 @@ void ShellSteps::loop()
 	    }
 	}	
     } while (c != 'q');
+}
+
+ShellSteps::ShellSteps(const StepsData &steps_data)
+{
+    const std::chrono::time_point now{std::chrono::system_clock::now()};
+    const std::chrono::year_month_day ymd{std::chrono::floor<std::chrono::days>(now)};
+
+    year = static_cast<int>(ymd.year());
+    month = static_cast<unsigned>(ymd.month());
+    data = steps_data;
 }
 
 void ShellSteps::all_times_stats() const
@@ -602,117 +493,6 @@ ShellSleep::ShellSleep(const SleepData &sleep_data)
     year = static_cast<int>(ymd.year());
     month = static_cast<unsigned>(ymd.month());
     data = sleep_data;
-}
-
-void ShellSleep::loop()
-{
-    char c{};
-    std::string action{};
-    std::function<void()> callback = std::bind(&ShellSleep::month_stats, this);
-    std::optional<std::pair<size_t, size_t>> limits = std::pair<size_t, size_t>{1, 12};
-    ushort* next_prev_ref = &month;
-
-    do
-    {
-	if (action.empty())
-	{
-	    system("clear");
-	    switch (c)
-	    {
-	    case 'd':
-		next_prev_ref = &month;
-		limits = std::pair<size_t, size_t>{1, 12};
-		callback = std::bind(&ShellSleep::month_stats, this);
-		break;
-	    case 'y':
-		next_prev_ref = &year;
-		limits = {};
-		callback = std::bind(&ShellSleep::year_stats, this);
-		break;
-	    case 'a':
-		next_prev_ref = nullptr;
-		limits = {};
-		callback = std::bind(&ShellSleep::all_times_stats, this);
-		break;
-	    }
-
-	    callback();
-
-	    cout << colors::YELLOW;
-	    cout << endl << endl;
-	    cout << "--------------------------------------------------------------------------------" << endl;
-	    cout << "n -> next    p -> previous    q -> exit" << endl << endl;
-	    cout << "Options Menu" << endl;
-	    cout << "    d -> Dashboard" << endl;
-	    cout << "    y -> Year Aggregated Stats" << endl;
-	    cout << "    a -> All Times Aggregated Stats" << endl << endl;
-	    cout << "Command Actions" << endl;
-	    cout << "    :<year> -> jump to the year" << endl;
-	    cout << "--------------------------------------------------------------------------------" << endl;
-	    cout << colors::RESET;
-	}
-
-	c = get_char();
-
-	if (action.empty() && next_prev_ref != nullptr)
-	{
-	    switch (c)
-	    {
-	    case 'n':
-		if (!limits.has_value())
-		{
-		    (*next_prev_ref)++;
-		}
-		else if (*next_prev_ref >= limits.value().first &&
-			 *next_prev_ref < limits.value().second)
-		{
-		    (*next_prev_ref)++;
-		}
-		else
-		{
-		    *next_prev_ref = limits.value().first;
-		    year = *next_prev_ref == month ? year + 1 : year;
-		}
-		break;
-	    case 'p':
-		if (!limits.has_value())
-		{
-		    (*next_prev_ref)--;
-		}
-		else if (*next_prev_ref > limits.value().first &&
-			 *next_prev_ref <= limits.value().second)
-		{
-		    (*next_prev_ref)--;
-		}
-		else
-		{
-		    *next_prev_ref = limits.value().second;
-		    year = *next_prev_ref == month ? year - 1 : year;
-		}
-		break;
-	    case ':':
-		action = ":";
-		break;
-	    }
-	}
-	else
-	{
-	    if (c == 27)
-	    {
-		action = {};
-	    }
-	    else if (c >= '0' && c <= '9')
-	    {
-		action += c;
-	    }
-	    else if (c == 13)
-	    {
-		int new_year = std::atoi(action.substr(1, action.length() - 1).c_str());
-		year = new_year > 0 ? new_year : year;
-		action = {};
-	    }
-	}	
-    } while (c != 'q');
 }
 
 void ShellSleep::all_times_stats() const
@@ -904,117 +684,6 @@ ShellActivities::ShellActivities(const ActivitiesData& activities_data)
     year = static_cast<int>(ymd.year());
     month = static_cast<unsigned>(ymd.month());
     data = activities_data;
-}
-
-void ShellActivities::loop()
-{
-    char c{};
-    std::string action{};
-    std::function<void()> callback = std::bind(&ShellActivities::month_stats, this);
-    std::optional<std::pair<size_t, size_t>> limits = std::pair<size_t, size_t>{1, 12};
-    ushort* next_prev_ref = &month;
-
-    do
-    {
-	if (action.empty())
-	{
-	    system("clear");
-	    switch (c)
-	    {
-	    case 'd':
-		next_prev_ref = &month;
-		limits = std::pair<size_t, size_t>{1, 12};
-		callback = std::bind(&ShellActivities::month_stats, this);
-		break;
-	    case 'y':
-		next_prev_ref = &year;
-		limits = {};
-		callback = std::bind(&ShellActivities::year_stats, this);
-		break;
-	    case 'a':
-		next_prev_ref = nullptr;
-		limits = {};
-		callback = std::bind(&ShellActivities::all_times_stats, this);
-		break;
-	    }
-
-	    callback();
-
-	    cout << colors::YELLOW;
-	    cout << endl << endl;
-	    cout << "--------------------------------------------------------------------------------" << endl;
-	    cout << "n -> next    p -> previous    q -> exit" << endl << endl;
-	    cout << "Options Menu" << endl;
-	    cout << "    d -> Dashboard" << endl;
-	    cout << "    y -> Year Aggregated Stats" << endl;
-	    cout << "    a -> All Times Aggregated Stats" << endl << endl;
-	    cout << "Command Actions" << endl;
-	    cout << "    :<year> -> jump to the year" << endl;
-	    cout << "--------------------------------------------------------------------------------" << endl;
-	    cout << colors::RESET;
-	}
-
-	c = get_char();
-
-	if (action.empty() && next_prev_ref != nullptr)
-	{
-	    switch (c)
-	    {
-	    case 'n':
-		if (!limits.has_value())
-		{
-		    (*next_prev_ref)++;
-		}
-		else if (*next_prev_ref >= limits.value().first &&
-			 *next_prev_ref < limits.value().second)
-		{
-		    (*next_prev_ref)++;
-		}
-		else
-		{
-		    *next_prev_ref = limits.value().first;
-		    year = *next_prev_ref == month ? year + 1 : year;
-		}
-		break;
-	    case 'p':
-		if (!limits.has_value())
-		{
-		    (*next_prev_ref)--;
-		}
-		else if (*next_prev_ref > limits.value().first &&
-			 *next_prev_ref <= limits.value().second)
-		{
-		    (*next_prev_ref)--;
-		}
-		else
-		{
-		    *next_prev_ref = limits.value().second;
-		    year = *next_prev_ref == month ? year - 1 : year;
-		}
-		break;
-	    case ':':
-		action = ":";
-		break;
-	    }
-	}
-	else
-	{
-	    if (c == 27)
-	    {
-		action = {};
-	    }
-	    else if (c >= '0' && c <= '9')
-	    {
-		action += c;
-	    }
-	    else if (c == 13)
-	    {
-		int new_year = std::atoi(action.substr(1, action.length() - 1).c_str());
-		year = new_year > 0 ? new_year : year;
-		action = {};
-	    }
-	}
-    } while (c != 'q');
 }
 
 void ShellActivities::month_stats() const

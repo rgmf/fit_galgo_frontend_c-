@@ -23,53 +23,59 @@ public:
     void loop();
 };
 
-class ShellSteps
+class ShellStats
+{
+protected:
+    ushort year;
+    ushort month;
+
+    virtual void all_times_stats() const = 0;
+    virtual void year_stats() const = 0;
+    virtual void month_stats() const = 0;
+
+public:
+    void loop();
+};
+
+class ShellSteps : public ShellStats
 {
 private:
     StepsData data;
-    ushort year;
-    ushort month;
 
-    void all_times_stats() const;
-    void year_stats() const;
-    void month_stats() const;
+    void all_times_stats() const override;
+    void year_stats() const override;
+    void month_stats() const override;
 
 public:
     explicit ShellSteps(const StepsData& steps_data);
-    void loop();
 };
 
-class ShellSleep
+class ShellSleep : public ShellStats
 {
 private:
     SleepData data;
-    ushort year;
-    ushort month;
 
-    void all_times_stats() const;
-    void year_stats() const;
-    void month_stats() const;
+    void all_times_stats() const override;
+    void year_stats() const override;
+    void month_stats() const override;
     
 public:
     explicit ShellSleep(const SleepData& sleep_data);
-    void loop();
 };
 
-class ShellActivities
+class ShellActivities: public ShellStats
 {
 private:
     ActivitiesData data;
-    ushort year;
-    ushort month;
 
-    void all_times_stats() const;
-    void year_stats() const;
-    void month_stats() const;
+    void all_times_stats() const override;
+    void year_stats() const override;
+    void month_stats() const override;
+
     void print_calendar() const;
 
 public:
     explicit ShellActivities(const ActivitiesData& activities_data);
-    void loop();
 };
 
 } // namespace fitgalgo

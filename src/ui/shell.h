@@ -27,16 +27,16 @@ class ShellSteps
 {
 private:
     StepsData data;
+    ushort year;
+    ushort month;
 
+    void all_times_yearly_stats() const;
     void year_stats() const;
-    void month_stats(const ushort& year, const ushort& month) const;
-    void week_stats(const ushort& year, const ushort& month) const;
-    void test(const ushort& year, const ushort& month) const;
+    void month_stats() const;
 
 public:
-    explicit ShellSteps(const StepsData& steps_data)
-	: data(steps_data) {}
-    void loop() const;
+    explicit ShellSteps(const StepsData& steps_data);
+    void loop();
 };
 
 class ShellSleep
@@ -51,7 +51,7 @@ private:
 public:
     explicit ShellSleep(const SleepData& sleep_data)
 	: data(sleep_data) {}
-    void loop() const;
+    void loop();
 };
 
 class ShellActivities
@@ -62,8 +62,8 @@ private:
     ushort month;
 
     void all_times_aggregated_stats() const;
-    void month_stats() const;
     void year_stats() const;
+    void month_stats() const;
     void print_calendar() const;
 
 public:

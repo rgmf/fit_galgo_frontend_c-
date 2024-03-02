@@ -372,53 +372,130 @@ void Shell::loop()
     } while (option != 'q');
 }
 
-void ShellSteps::loop() const
+ShellSteps::ShellSteps(const StepsData &steps_data)
 {
-    char option;
     const std::chrono::time_point now{std::chrono::system_clock::now()};
     const std::chrono::year_month_day ymd{std::chrono::floor<std::chrono::days>(now)};
 
-    do {
-	system("clear");
-	cout << "STEPS STATS" << endl;
-	cout << "-------------------------------------------" << endl;
-	cout << "1 - All aggregated stats" << endl;
-	cout << "2 - Stats for a year" << endl;
-	cout << "3 - Stats for a year/month" << endl;
-	cout << "4 - Stats for a year/month/week" << endl;
-	cout << "q - Exit" << endl;
-	cout << "Select an option: ";
-
-	option = get_char();
-
-	switch (option)
-	{
-	case '1':
-	    this->year_stats();
-	    cout << endl << "Press Enter to continue...";
-	    cin.get();
-	    break;
-	case '2':
-	    cout << endl;
-	    keyboard_handled([this](const ushort& year, const ushort& month) {
-		this->month_stats(year, month);
-	    }, static_cast<int>(ymd.year()), static_cast<unsigned>(ymd.month()));
-	    break;
-	case '3':
-	    cout << endl;
-	    keyboard_handled([this](const ushort& year, const ushort& month) {
-		this->week_stats(year, month);
-	    }, static_cast<int>(ymd.year()), static_cast<unsigned>(ymd.month()));
-	    break;
-	}
-    } while (option != 'q');
+    year = static_cast<int>(ymd.year());
+    month = static_cast<unsigned>(ymd.month());
+    data = steps_data;
 }
 
-void ShellSteps::year_stats() const
+void ShellSteps::loop()
 {
-    system("clear");
-    cout << "YEARLY STEPS STATS" << endl;
-    cout << "=====================================================" << endl;
+    char c{};
+    std::string action{};
+    std::function<void()> callback = std::bind(&ShellSteps::month_stats, this);
+    std::optional<std::pair<size_t, size_t>> limits = std::pair<size_t, size_t>{1, 12};
+    ushort* next_prev_ref = &month;
+
+    do
+    {
+	if (action.empty())
+	{
+	    system("clear");
+	    switch (c)
+	    {
+	    case 'd':
+		next_prev_ref = &month;
+		limits = std::pair<size_t, size_t>{1, 12};
+		callback = std::bind(&ShellSteps::month_stats, this);
+		break;
+	    case 'y':
+		next_prev_ref = &year;
+		limits = {};
+		callback = std::bind(&ShellSteps::year_stats, this);
+		break;
+	    case 'a':
+		next_prev_ref = nullptr;
+		limits = {};
+		callback = std::bind(&ShellSteps::all_times_yearly_stats, this);
+		break;
+	    }
+
+	    callback();
+
+	    cout << colors::YELLOW;
+	    cout << endl << endl;
+	    cout << "--------------------------------------------------------------------------------" << endl;
+	    cout << "n -> next    p -> previous    q -> exit" << endl << endl;
+	    cout << "Options Menu" << endl;
+	    cout << "    d -> Dashboard" << endl;
+	    cout << "    y -> Year Aggregated Stats" << endl;
+	    cout << "    a -> All Times Aggregated Stats" << endl << endl;
+	    cout << "Command Actions" << endl;
+	    cout << "    :<year> -> jump to the year" << endl;
+	    cout << "--------------------------------------------------------------------------------" << endl;
+	    cout << colors::RESET;
+	}
+
+	c = get_char();
+
+	if (action.empty() && next_prev_ref != nullptr)
+	{
+	    switch (c)
+	    {
+	    case 'n':
+		if (!limits.has_value())
+		{
+		    (*next_prev_ref)++;
+		}
+		else if (*next_prev_ref >= limits.value().first &&
+			 *next_prev_ref < limits.value().second)
+		{
+		    (*next_prev_ref)++;
+		}
+		else
+		{
+		    *next_prev_ref = limits.value().first;
+		    year = *next_prev_ref == month ? year + 1 : year;
+		}
+		break;
+	    case 'p':
+		if (!limits.has_value())
+		{
+		    (*next_prev_ref)--;
+		}
+		else if (*next_prev_ref > limits.value().first &&
+			 *next_prev_ref <= limits.value().second)
+		{
+		    (*next_prev_ref)--;
+		}
+		else
+		{
+		    *next_prev_ref = limits.value().second;
+		    year = *next_prev_ref == month ? year - 1 : year;
+		}
+		break;
+	    case ':':
+		action = ":";
+		break;
+	    }
+	}
+	else
+	{
+	    if (c == 27)
+	    {
+		action = {};
+	    }
+	    else if (c >= '0' && c <= '9')
+	    {
+		action += c;
+	    }
+	    else if (c == 13)
+	    {
+		int new_year = std::atoi(action.substr(1, action.length() - 1).c_str());
+		year = new_year > 0 ? new_year : year;
+		action = {};
+	    }
+	}	
+    } while (c != 'q');
+}
+
+void ShellSteps::all_times_yearly_stats() const
+{
+    print_header("STEPS: ALL TIMES YEARLY STATS");
 
     if (data.steps.empty())
     {
@@ -432,28 +509,28 @@ void ShellSteps::year_stats() const
     {
 	if (current_year != idx.year())
 	{
-	    print_steps_stats(std::format("Year {}", current_year), all_steps);
+	    print_header(std::format("Year {}", current_year));
+	    print_steps_stats(all_steps);
 	    current_year = idx.year();
 	    all_steps = Steps{};
 	}
 	all_steps += steps;
     }
 
-    print_steps_stats(std::format("Year {}", current_year), all_steps);
+    print_header(std::format("Year {}", current_year));
+    print_steps_stats(all_steps);
 }
 
-void ShellSteps::month_stats(const ushort& year, const ushort& month) const
+void ShellSteps::year_stats() const
 {
-    system("clear");
-    cout << "MONTHLY STEPS STATS FOR " << year << ", " << MONTHS_NAMES[month - 1] << endl;
-    cout << "=====================================================" << endl;
+    std::ostringstream oss;
+    oss << "STEPS: YEAR DASHBOARD - " << year;
+    print_header(oss.str());
 
     auto itr = std::find_if(
 	this->data.steps.cbegin(),
 	this->data.steps.cend(),
-	[year, month](const auto& item) {
-	    return item.first.year() == year && item.first.month() == month;
-	});
+	[this](const auto& item) { return item.first.year() == this->year; });
     if (itr == this->data.steps.end())
     {
 	cout << "There are not data for this date" << endl;
@@ -461,20 +538,20 @@ void ShellSteps::month_stats(const ushort& year, const ushort& month) const
     }
 
     Steps all_steps{};
-    while (itr != this->data.steps.end() && (itr->first.year() == year && itr->first.month() == month))
+    while (itr != this->data.steps.end() && itr->first.year() == year)
     {
 	all_steps += itr->second;
 	itr++;
     }
 
-    print_steps_stats(MONTHS_NAMES[month - 1], all_steps);
+    print_steps_stats(all_steps);
 }
 
-void ShellSteps::week_stats(const ushort& year, const ushort& month) const
+void ShellSteps::month_stats() const
 {
-    system("clear");
-    cout << MONTHS_NAMES[month - 1] << ", " << year << endl;
-    cout << "=====================================================" << endl;
+    std::ostringstream oss;
+    oss << "STEPS: MONTH DASHBOARD - " << year << ", " << MONTHS_NAMES[month - 1];
+    print_header(oss.str());
 
     Calendar calendar{year, month};
     auto first_wd_ymd = calendar.get_first_wd_ymd();
@@ -483,18 +560,22 @@ void ShellSteps::week_stats(const ushort& year, const ushort& month) const
     auto itr = std::find_if(
 	this->data.steps.cbegin(),
 	this->data.steps.cend(),
-	[year, month, first_wd_ymd](const auto& item) {
+	[this, first_wd_ymd](const auto& item) {
 	    return item.first.ymd() == first_wd_ymd ||
-		(item.first.year() == year && item.first.month() == month);
+		(item.first.year() == this->year && item.first.month() == this->month);
 	});
     if (itr == this->data.steps.end())
     {
      	cout << "There are not data for this date " << endl;
      	return;
     }
-    
+
+    Steps all_steps{};
     while (itr != this->data.steps.end() && itr->first.ymd() <= last_wd_ymd)
     {
+	if (itr->first.month() == month)
+	    all_steps += itr->second;
+
 	std::string s1 = std::to_string(itr->second.steps) + " steps";
 	std::string s2 = std::to_string(
 	    static_cast<int>(std::round(itr->second.distance))) + " m";
@@ -507,9 +588,13 @@ void ShellSteps::week_stats(const ushort& year, const ushort& month) const
     }
 
     calendar.print();
+
+    cout << endl;
+    print_header("Total steps for month: " + MONTHS_NAMES[month - 1]);
+    print_steps_stats(all_steps);
 }
 
-void ShellSleep::loop() const
+void ShellSleep::loop()
 {
     char option;
     const std::chrono::time_point now{std::chrono::system_clock::now()};

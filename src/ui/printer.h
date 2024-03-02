@@ -59,10 +59,8 @@ inline std::string value_formatted(
     return ss.str();
 }
 
-inline void print_steps_stats(const std::string& h, const Steps& s)
+inline void print_steps_stats(const Steps& s)
 {
-    cout << h << endl;
-    cout << "-----------------------------------------------------" << endl;
     print_value("Steps", unit(s.steps, "steps"));
     print_value("Distance", distance(s.distance));
     print_value("Calories", calories(s.calories));

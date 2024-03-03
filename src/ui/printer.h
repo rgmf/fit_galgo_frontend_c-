@@ -59,11 +59,13 @@ inline std::string value_formatted(
     return ss.str();
 }
 
-inline void print_steps_stats(const Steps& s)
+inline void print_steps_stats(const Steps& s, size_t days_count = 0)
 {
     print_value("Steps", unit(s.steps, "steps"));
     print_value("Distance", distance(s.distance));
     print_value("Calories", calories(s.calories));
+    if (days_count > 0)
+	print_value("Avg. Steps", unit((int) (s.steps / days_count), "steps/day"));
     cout << endl;
 }
 

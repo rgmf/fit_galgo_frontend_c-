@@ -1,3 +1,5 @@
+#include <ranges>
+#include <cstddef>
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -462,10 +464,21 @@ void ShellSteps::month_stats() const
     }
 
     Steps all_steps{};
+    size_t count_days = 0;
+    auto weekly_steps = std::map<std::string, Steps>();
+    size_t week_number = 1;
+    size_t month_day = 1;
     while (itr != this->data.steps.end() && itr->first.ymd() <= last_wd_ymd)
     {
 	if (itr->first.month() == month)
+	{
 	    all_steps += itr->second;
+	    ++count_days;
+	}
+
+	weekly_steps["Week " + std::to_string(week_number)] += itr->second;
+	if (month_day % 7 == 0)
+	    ++week_number;
 
 	std::string s1 = std::to_string(itr->second.steps) + " steps";
 	std::string s2 = std::to_string(
@@ -475,14 +488,32 @@ void ShellSteps::month_stats() const
 	calendar.add(itr->first.ymd(), s1);
 	calendar.add(itr->first.ymd(), s2);
 	calendar.add(itr->first.ymd(), s3);
-	itr++;
+
+	++month_day;
+	++itr;
     }
 
     calendar.print();
 
     cout << endl;
+    auto tabular = Tabular();
+    for (const auto& [key, value] : weekly_steps)
+    {
+	tabular.add_header(key);
+	tabular.add_values(
+	    key,
+	    {
+		unit(value.steps, "steps"),
+		distance(value.distance),
+		unit(value.calories, "kcal"),
+		unit(value.steps / 7, "steps/day")
+	    });
+    }
+    tabular.print();
+
+    cout << endl;
     print_header("Total steps for month: " + MONTHS_NAMES[month - 1]);
-    print_steps_stats(all_steps);
+    print_steps_stats(all_steps, count_days);
 }
 
 ShellSleep::ShellSleep(const SleepData &sleep_data)

@@ -118,10 +118,15 @@ public:
 			cout << ' ';
 		    }
 		}
+		else
+		{
+		    cout << '|';
+		    for (size_t i = 0; i < width; i++)
+			cout << ' ';
+		}
 	    }
 
-	    if (has_items)
-		cout << '|' << endl;
+	    cout << '|' << endl;
 
 	    idx++;
 	}

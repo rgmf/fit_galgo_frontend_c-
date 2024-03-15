@@ -35,7 +35,7 @@ std::string time(const float &v)
 {
     int h = v / 3600;
     int min = (static_cast<int>(v) % 3600) / 60;
-    int sec = ((static_cast<int>(v) % 3600) / 60) % 60;
+    int sec = (static_cast<int>(v) % 3600) % 60;
     std::string result = "";
 
     if (h > 0)
@@ -90,6 +90,11 @@ std::string temperature(const float& v)
 }
 
 std::string value(const float& v)
+{
+    return formatted_number(v);
+}
+
+std::string ivalue(const int &v)
 {
     return formatted_number(v);
 }

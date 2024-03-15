@@ -579,17 +579,17 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 			auto itr_t = s.FindMember("timestamp");
 			auto itr_st = s.FindMember("set_type");
 			auto itr_d = s.FindMember("duration");
-			auto itr_r = s.FindMember("repetition");
+			auto itr_r = s.FindMember("repetitions");
 			auto itr_w = s.FindMember("weight");
 			auto itr_sti = s.FindMember("start_time");
 			auto itr_c = s.FindMember("category");
-			auto itr_sc = s.FindMember("sub_category");
+			auto itr_sc = s.FindMember("category_subtype");
 			auto itr_wdu = s.FindMember("weight_display_unit");
 			auto itr_mi = s.FindMember("message_index");
 			auto itr_wsi = s.FindMember("wkt_step_index");
 
-			if (itr_t != s.MemberEnd() && itr_t->value.IsFloat())
-			    set.timestamp = itr_t->value.GetFloat();
+			if (itr_t != s.MemberEnd() && itr_t->value.IsString())
+			    set.timestamp = itr_t->value.GetString();
 			if (itr_st != s.MemberEnd() && itr_st->value.IsString())
 			{
 			    auto it = std::find(std::begin(set_type_names), std::end(set_type_names), itr_st->value.GetString());
@@ -609,8 +609,8 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 			    set.repetitions = itr_r->value.GetInt();
 			if (itr_w != s.MemberEnd() && itr_w->value.IsFloat())
 			    set.weight = itr_w->value.GetFloat();
-			if (itr_sti != s.MemberEnd() && itr_sti->value.IsFloat())
-			    set.start_time = itr_sti->value.GetFloat();
+			if (itr_sti != s.MemberEnd() && itr_sti->value.IsString())
+			    set.start_time = itr_sti->value.GetString();
 			if (itr_c != s.MemberEnd() && itr_c->value.IsArray())
 			{
 			    for (const auto& v : itr_c->value.GetArray())

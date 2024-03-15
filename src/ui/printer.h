@@ -1,10 +1,12 @@
 #ifndef _ES_RGMF_UI_PRINTER_H
 #define _ES_RGMF_UI_PRINTER_H 1
 
+#include <memory>
 #include <iostream>
 
 #include "colors.h"
 #include "repr.h"
+#include "tabular.h"
 #include "../utils/string.h"
 #include "../core/api.h"
 #include "../core/stats.h"
@@ -31,6 +33,13 @@ inline void print_optional_stat(
 inline void print_header(const std::string& header)
 {
     cout << colors::GREEN << colors::BOLD << header << endl;
+    cout << "--------------------------------------------------------------------------------"
+	 << colors::RESET << endl << endl;
+}
+
+inline void print_subheader(const std::string& header)
+{
+    cout << colors::BOLD << header << endl;
     cout << "--------------------------------------------------------------------------------"
 	 << colors::RESET << endl << endl;
 }
@@ -86,8 +95,55 @@ inline void print_sleep_stats(const SleepStats& stats)
     cout << endl;
 }
 
-inline void print_activities_stats(const Activity* a)
+inline void print_splits(const std::vector<Split>& splits)
 {
+    for (auto const& split : splits)
+    {
+	print_value("Split Type", split.split_type);
+    }
+}
+
+inline void print_sets(const std::vector<Set>& sets)
+{
+    unsigned resting_accum{};
+    std::vector<std::pair<std::string, std::string>> row{
+	{"Exercise", {}}, {"Duration", {}}, {"Reps", {}}, {"Weight", {}}, {"Resting", {}}};
+    Tabular tabular({"Exercise", "Duration", "Reps", "Weight", "Resting"});
+    for (auto const& set : sets)
+    {
+	if (set.set_type == SetType::ACTIVE)
+	{
+	    row[4].second = time(resting_accum);
+	    if (!row[0].second.empty())
+	    {
+		tabular.add_row(row);
+		row = {{"Exercise", {}}, {"Duration", {}}, {"Reps", {}}, {"Weight", {}}, {"Resting", {}}};
+		resting_accum = 0;
+	    }
+	    row[0].second = !set.category.empty() ? set.category[0] : "Unknown";
+	    row[1].second = time(set.duration);
+	    row[2].second = ivalue(set.repetitions);
+	    row[3].second = set.weight_display_unit.empty() ?
+		unit(set.weight) : unit(set.weight, set.weight_display_unit);
+	}
+	else if (set.set_type == SetType::REST)
+	{
+	    resting_accum += set.duration;
+	}
+    }
+
+    if (!row[0].second.empty())
+    {
+	tabular.add_row(row);
+    }
+
+    tabular.print();
+}
+
+inline void print_activities_stats(const std::unique_ptr<Activity>& a)
+{
+    print_header(a->sport + " (" + a->sub_sport + ")");
+
     cout << colors::BOLD << colors::RED;
     print_optional_stat<float>("Work Time", a->total_work_time, time);
     cout << colors::RESET << colors::RED;
@@ -95,11 +151,11 @@ inline void print_activities_stats(const Activity* a)
     print_optional_stat<float>("Timer Time", a->total_timer_time, time);
 
     cout << colors::RESET << colors::CYAN;
-    print_optional_stat<float>("Distance", a->total_distance, elevation);
+    print_optional_stat<float>("Distance", a->total_distance, distance);
 
     cout << colors::RESET << colors::MAGENTA;
-    print_optional_stat<float>("Avg Speed", a->avg_speed, elevation);
-    print_optional_stat<float>("Max Speed", a->max_speed, elevation);
+    print_optional_stat<float>("Avg Speed", a->avg_speed, speed);
+    print_optional_stat<float>("Max Speed", a->max_speed, speed);
 
     cout << colors::RESET << colors::GREEN;
     print_optional_stat<float>("Ascent", a->total_ascent, elevation);
@@ -116,36 +172,16 @@ inline void print_activities_stats(const Activity* a)
     print_optional_stat<float>("Training Load Peak", a->training_load_peak, value);
     print_optional_stat<float>("Total Training Effect", a->total_training_effect, value);
     print_optional_stat<float>("Total Anaerobic Training Effect", a->total_anaerobic_training_effect, value);
-}
 
-inline void print_sets(const std::vector<Set>& sets)
-{
-    for (auto const& set : sets)
+    if (a->get_id() == ActivityType::SETS)
     {
-	print_value("Timestamp", time(set.timestamp));
+	cout << endl;
+	print_subheader("Sets");
+	auto set_activity = static_cast<SetsActivity*>(a.get());
+	print_sets(set_activity->sets);
     }
-}
 
-inline void print_sets_activities_stats(const SetsActivity* a)
-{
-    if (!a->sets.empty())
-	print_sets(a->sets);
-    print_activities_stats(a);
-}
-
-inline void print_splits(const std::vector<Split>& splits)
-{
-    for (auto const& split : splits)
-    {
-	print_value("Split Type", split.split_type);
-    }
-}
-
-inline void print_splits_activities_stats(const SplitsActivity* a)
-{
-    if (!a->splits.empty())
-	print_splits(a->splits);
-    print_activities_stats(a);
+    cout << endl;
 }
 
 inline void print_aggregated_stats(const AggregatedStats& stats)

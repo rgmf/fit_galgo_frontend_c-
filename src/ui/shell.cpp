@@ -1,6 +1,8 @@
+#include <sstream>
 #include <string>
 #include <iostream>
 
+#include <sys/stat.h>
 #include <unistd.h>
 #include <termios.h>
 
@@ -11,6 +13,7 @@
 #include "tabular.h"
 #include "printer.h"
 #include "../core/stats.h"
+#include "../utils/date.h"
 
 using std::cout;
 using std::endl;
@@ -292,6 +295,11 @@ void ShellStats::loop()
 		limits = {};
 		callback = std::bind(&ShellStats::all_times_stats, this);
 		break;
+	    case 'i':
+		next_prev_ref = &day;
+		limits = std::pair<size_t, size_t>{1, last_month_day(year, month)};
+		callback = std::bind(&ShellStats::item_by_item_stats, this);
+		break;
 	    }
 
 	    callback();
@@ -303,7 +311,8 @@ void ShellStats::loop()
 	    cout << "Options Menu" << endl;
 	    cout << "    d -> Dashboard" << endl;
 	    cout << "    y -> Year Stats" << endl;
-	    cout << "    a -> All Times Stats" << endl << endl;
+	    cout << "    a -> All Times Stats" << endl;
+	    cout << "    i -> Item by item stats" << endl << endl;
 	    cout << "Command Actions" << endl;
 	    cout << "    :<year> -> jump to the year" << endl;
 	    cout << "--------------------------------------------------------------------------------" << endl;
@@ -329,7 +338,20 @@ void ShellStats::loop()
 		else
 		{
 		    *next_prev_ref = limits.value().first;
-		    year = *next_prev_ref == month ? year + 1 : year;
+		    if (next_prev_ref == &month)
+		    {
+			year = *next_prev_ref == month ? year + 1 : year;
+		    }
+		    else if (next_prev_ref == &day)
+		    {
+			month++;
+			if (month > 12)
+			{
+			    month = 1;
+			    year++;
+			}
+			limits = std::pair<size_t, size_t>{1, last_month_day(year, month)};
+		    }
 		}
 		break;
 	    case 'p':
@@ -344,8 +366,22 @@ void ShellStats::loop()
 		}
 		else
 		{
-		    *next_prev_ref = limits.value().second;
-		    year = *next_prev_ref == month ? year - 1 : year;
+		    if (next_prev_ref == &month)
+		    {
+			*next_prev_ref = limits.value().second;
+			year = *next_prev_ref == month ? year - 1 : year;
+		    }
+		    else if (next_prev_ref == &day)
+		    {
+			month--;
+			if (month < 1)
+			{
+			    month = 12;
+			    year--;
+			}
+			limits = std::pair<size_t, size_t>{1, last_month_day(year, month)};
+			*next_prev_ref = limits.value().second;
+		    }
 		}
 		break;
 	    case ':':
@@ -380,6 +416,7 @@ ShellSteps::ShellSteps(const StepsData &steps_data)
 
     year = static_cast<int>(ymd.year());
     month = static_cast<unsigned>(ymd.month());
+    day = static_cast<unsigned>(ymd.day());
     data = steps_data;
 }
 
@@ -509,6 +546,12 @@ void ShellSteps::month_stats() const
     print_steps_stats(all_stats);
 }
 
+void ShellSteps::item_by_item_stats() const
+{
+    print_header("STEPS: ITEM BY ITEM STATS");
+    cout << "No implemented yet" << endl;
+}
+
 ShellSleep::ShellSleep(const SleepData &sleep_data)
 {
     const std::chrono::time_point now{std::chrono::system_clock::now()};
@@ -516,6 +559,7 @@ ShellSleep::ShellSleep(const SleepData &sleep_data)
 
     year = static_cast<int>(ymd.year());
     month = static_cast<unsigned>(ymd.month());
+    day = static_cast<unsigned>(ymd.day());
     data = sleep_data;
 }
 
@@ -653,6 +697,13 @@ void ShellSleep::month_stats() const
     }
 }
 
+void ShellSleep::item_by_item_stats() const
+{
+    print_header("SLEEP: ITEM BY ITEM STATS");
+    cout << "No implemented yet" << endl;
+}
+
+
 inline std::vector<std::string> activities_stats(const Activity* a)
 {
     std::vector<std::string> result{};
@@ -707,6 +758,7 @@ ShellActivities::ShellActivities(const ActivitiesData& activities_data)
 
     year = static_cast<int>(ymd.year());
     month = static_cast<unsigned>(ymd.month());
+    day = static_cast<unsigned>(ymd.day());
     data = activities_data;
 }
 
@@ -836,6 +888,36 @@ void ShellActivities::all_times_stats() const
     }
 
     print_aggregated_stats(stats);
+}
+
+void ShellActivities::item_by_item_stats() const
+{
+    std::ostringstream oss;
+    oss << "ACTIVITIES: " << day << ", " << MONTHS_NAMES[month - 1] << ", " << year;
+    print_header(oss.str());
+
+    auto itr = std::find_if(
+	this->data.activities.cbegin(),
+	this->data.activities.cend(),
+	[this](const auto& item) {
+	    return item.first.year() == year &&
+		item.first.month() == month &&
+		item.first.day() == day;
+	});
+    if (itr == this->data.activities.end())
+    {
+     	cout << "There are not data for this date " << endl;
+     	return;
+    }
+
+    while (itr != this->data.activities.end() &&
+	   itr->first.year() == year &&
+	   itr->first.month() == month &&
+	   itr->first.day() == day)
+    {
+	print_activities_stats(itr->second);
+	itr++;
+    }
 }
 
 void ShellActivities::print_calendar() const

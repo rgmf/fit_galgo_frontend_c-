@@ -1,7 +1,6 @@
 #ifndef _ES_RGMF_CORE_API_H
 #define _ES_RGMF_CORE_API_H 1
 
-#include <cstddef>
 #include <memory>
 #include <sys/types.h>
 #include <chrono>
@@ -202,12 +201,12 @@ const std::string set_type_names[] = { "unknown", "active", "rest" };
 
 struct Set
 {
-    float timestamp{};
+    std::string timestamp{};
     SetType set_type{SetType::UNKNOWN};
     float duration{};
     int repetitions{};
     float weight{};
-    float start_time{};
+    std::string start_time{};
     std::vector<std::string> category{};
     std::vector<std::string> category_subtype{};
     std::string weight_display_unit{};

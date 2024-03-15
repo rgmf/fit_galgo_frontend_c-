@@ -26,12 +26,14 @@ public:
 class ShellStats
 {
 protected:
+    ushort day;
     ushort year;
     ushort month;
 
     virtual void all_times_stats() const = 0;
     virtual void year_stats() const = 0;
     virtual void month_stats() const = 0;
+    virtual void item_by_item_stats() const = 0;
 
 public:
     void loop();
@@ -45,6 +47,7 @@ private:
     void all_times_stats() const override;
     void year_stats() const override;
     void month_stats() const override;
+    void item_by_item_stats() const override;
 
 public:
     explicit ShellSteps(const StepsData& steps_data);
@@ -58,6 +61,7 @@ private:
     void all_times_stats() const override;
     void year_stats() const override;
     void month_stats() const override;
+    void item_by_item_stats() const override;
     
 public:
     explicit ShellSleep(const SleepData& sleep_data);
@@ -71,6 +75,7 @@ private:
     void all_times_stats() const override;
     void year_stats() const override;
     void month_stats() const override;
+    void item_by_item_stats() const override;
 
     void print_calendar() const;
 

@@ -1,4 +1,3 @@
-#include <memory>
 #ifndef _ES_RGMF_UI_PRINTER_H
 #define _ES_RGMF_UI_PRINTER_H 1
 
@@ -72,18 +71,21 @@ inline void print_steps_stats(const StepsStats& stats)
     cout << endl;
 }
 
-inline void print_sleep_stats(const Sleep& s, const size_t& count)
+inline void print_sleep_stats(const SleepStats& stats)
 {
-    print_value("Sleep Score", unit(s.assessment.overall_sleep_score / count));
-    print_value("Deep Score", unit(s.assessment.deep_sleep_score / count));
-    print_value("REM Score", unit(s.assessment.rem_sleep_score / count));
-    print_value("Light Score", unit(s.assessment.light_sleep_score / count));
-    print_value("Awekening Count", unit(s.assessment.awakenings_count / count));
-    print_value("Awekening Count Score", unit(s.assessment.awakenings_count_score / count));
-    print_value("Duration Score", unit(s.assessment.sleep_duration_score / count));
-    print_value("Quality Score", unit(s.assessment.sleep_quality_score / count));
-    print_value("Recovery Score", unit(s.assessment.sleep_recovery_score / count));
-    print_value("Avg. Stress", unit(s.assessment.average_stress_during_sleep / count));
+    const std::unique_ptr<Sleep>& sleep = stats.get_stats();
+    const size_t& count = stats.get_count();
+
+    print_value("Sleep Score", unit(sleep->assessment.overall_sleep_score / count));
+    print_value("Deep Score", unit(sleep->assessment.deep_sleep_score / count));
+    print_value("REM Score", unit(sleep->assessment.rem_sleep_score / count));
+    print_value("Light Score", unit(sleep->assessment.light_sleep_score / count));
+    print_value("Awekening Count", unit(sleep->assessment.awakenings_count / count));
+    print_value("Awekening Count Score", unit(sleep->assessment.awakenings_count_score / count));
+    print_value("Duration Score", unit(sleep->assessment.sleep_duration_score / count));
+    print_value("Quality Score", unit(sleep->assessment.sleep_quality_score / count));
+    print_value("Recovery Score", unit(sleep->assessment.sleep_recovery_score / count));
+    print_value("Avg. Stress", unit(sleep->assessment.average_stress_during_sleep / count));
     cout << endl;
 }
 

@@ -533,21 +533,21 @@ void ShellSleep::all_times_stats() const
     }
 
     short current_year = this->data.sleep.begin()->first.year();
-    SleepWithCount swc{};
+    SleepStats stats{};
     for (const auto& [idx, sleep] : this->data.sleep)
     {
 	if (current_year != idx.year())
 	{
 	    print_header(std::format("Year {}", current_year));
-	    print_sleep_stats(swc.sleep, swc.count);
+	    print_sleep_stats(stats);
 	    current_year = idx.year();
-	    swc = SleepWithCount{};
+	    stats = SleepStats{};
 	}
-	swc = SleepWithCount{swc.sleep + sleep, swc.count + 1};
+	stats += sleep;
     }
 
     print_header(std::format("Year {}", current_year));
-    print_sleep_stats(swc.sleep, swc.count);
+    print_sleep_stats(stats);
 }
 
 void ShellSleep::year_stats() const
@@ -566,14 +566,14 @@ void ShellSleep::year_stats() const
 	return;
     }
 
-    SleepWithCount swc{};
+    SleepStats stats{};
     while (itr != this->data.sleep.end() && itr->first.year() == year)
     {
-	swc = SleepWithCount{swc.sleep + itr->second, swc.count + 1};
+	stats += itr->second;
 	itr++;
     }
 
-    print_sleep_stats(swc.sleep, swc.count);
+    print_sleep_stats(stats);
 }
 
 void ShellSleep::month_stats() const
@@ -599,11 +599,11 @@ void ShellSleep::month_stats() const
      	return;
     }
 
-    SleepWithCount swc{};
+    SleepStats stats{};
     while (itr != this->data.sleep.end() && itr->first.ymd() <= last_wd_ymd)
     {
 	if (itr->first.month() == month)
-	    swc = SleepWithCount{swc.sleep + itr->second, swc.count + 1};
+	    stats += itr->second;
 
 	std::string s1 = "Overall    " +
 	    std::to_string(
@@ -648,11 +648,11 @@ void ShellSleep::month_stats() const
 
     calendar.print();
 
-    if (swc.count > 0)
+    if (!stats.empty())
     {
 	cout << endl;
 	print_header(MONTHS_NAMES[month - 1] + ": average");
-	print_sleep_stats(swc.sleep, swc.count);
+	print_sleep_stats(stats);
     }
 }
 

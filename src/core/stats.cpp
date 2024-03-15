@@ -383,9 +383,106 @@ StepsStats operator+(StepsStats lhs, const StepsStats& rhs)
     return lhs;
 }
 
-const std::unique_ptr<Steps>& StepsStats::get_stats() const
+const std::unique_ptr<Steps> &StepsStats::get_stats() const
 {
     return steps;
+}
+
+SleepStats::SleepStats()
+{
+    sleep = std::make_unique<Sleep>();
+}
+
+SleepStats& SleepStats::operator+=(const Sleep &rhs)
+{
+    count++;
+
+    if (sleep->zone_info.empty())
+	sleep->zone_info = rhs.zone_info;
+
+    sleep->assessment.combined_awake_score += rhs.assessment.combined_awake_score;
+    sleep->assessment.awake_time_score += rhs.assessment.awake_time_score;	
+    sleep->assessment.awakenings_count_score += rhs.assessment.awakenings_count_score;	
+    sleep->assessment.deep_sleep_score += rhs.assessment.deep_sleep_score;	
+    sleep->assessment.sleep_duration_score += rhs.assessment.sleep_duration_score;	
+    sleep->assessment.light_sleep_score += rhs.assessment.light_sleep_score;	
+    sleep->assessment.overall_sleep_score += rhs.assessment.overall_sleep_score;	
+    sleep->assessment.sleep_quality_score += rhs.assessment.sleep_quality_score;	
+    sleep->assessment.sleep_recovery_score += rhs.assessment.sleep_recovery_score;	
+    sleep->assessment.rem_sleep_score += rhs.assessment.rem_sleep_score;	
+    sleep->assessment.sleep_restlessness_score += rhs.assessment.sleep_restlessness_score;
+    sleep->assessment.awakenings_count += rhs.assessment.awakenings_count;
+    sleep->assessment.interruptions_score += rhs.assessment.interruptions_score;	
+    sleep->assessment.average_stress_during_sleep += rhs.assessment.average_stress_during_sleep;
+    
+    sleep->levels.insert(sleep->levels.end(), rhs.levels.begin(), rhs.levels.end());
+    sleep->dates.insert(sleep->dates.end(), rhs.dates.begin(), rhs.dates.end());
+
+    return *this;
+}
+
+SleepStats &SleepStats::operator+=(const SleepStats &rhs)
+{
+    count++;
+
+    if (sleep->zone_info.empty())
+	sleep->zone_info = rhs.sleep->zone_info;
+
+    sleep->assessment.combined_awake_score += rhs.sleep->assessment.combined_awake_score;
+    sleep->assessment.awake_time_score += rhs.sleep->assessment.awake_time_score;	
+    sleep->assessment.awakenings_count_score += rhs.sleep->assessment.awakenings_count_score;	
+    sleep->assessment.deep_sleep_score += rhs.sleep->assessment.deep_sleep_score;	
+    sleep->assessment.sleep_duration_score += rhs.sleep->assessment.sleep_duration_score;	
+    sleep->assessment.light_sleep_score += rhs.sleep->assessment.light_sleep_score;	
+    sleep->assessment.overall_sleep_score += rhs.sleep->assessment.overall_sleep_score;	
+    sleep->assessment.sleep_quality_score += rhs.sleep->assessment.sleep_quality_score;	
+    sleep->assessment.sleep_recovery_score += rhs.sleep->assessment.sleep_recovery_score;	
+    sleep->assessment.rem_sleep_score += rhs.sleep->assessment.rem_sleep_score;	
+    sleep->assessment.sleep_restlessness_score += rhs.sleep->assessment.sleep_restlessness_score;
+    sleep->assessment.awakenings_count += rhs.sleep->assessment.awakenings_count;
+    sleep->assessment.interruptions_score += rhs.sleep->assessment.interruptions_score;	
+    sleep->assessment.average_stress_during_sleep += rhs.sleep->assessment.average_stress_during_sleep;
+
+    sleep->levels.insert(sleep->levels.end(), rhs.sleep->levels.begin(), rhs.sleep->levels.end());
+    sleep->dates.insert(sleep->dates.end(), rhs.sleep->dates.begin(), rhs.sleep->dates.end());
+
+    return *this;
+}
+
+SleepStats operator+(SleepStats lhs, const Sleep& rhs)
+{
+    lhs += rhs;
+    return lhs;
+}
+
+SleepStats operator+(SleepStats lhs, const SleepStats& rhs)
+{
+    lhs += rhs;
+    return lhs;
+}
+
+SleepStats& SleepStats::operator/(int n)
+{
+    sleep->assessment.combined_awake_score /= n;
+    sleep->assessment.awake_time_score /= n;
+    sleep->assessment.awakenings_count_score /= n;
+    sleep->assessment.deep_sleep_score /= n;
+    sleep->assessment.sleep_duration_score /= n;
+    sleep->assessment.light_sleep_score /= n;
+    sleep->assessment.overall_sleep_score /= n;
+    sleep->assessment.sleep_quality_score /= n;
+    sleep->assessment.sleep_recovery_score /= n;
+    sleep->assessment.rem_sleep_score /= n;
+    sleep->assessment.sleep_restlessness_score /= n;
+    sleep->assessment.awakenings_count /= n;
+    sleep->assessment.interruptions_score /= n;
+    sleep->assessment.average_stress_during_sleep /= n;
+    return *this;
+}
+
+const std::unique_ptr<Sleep>& SleepStats::get_stats() const
+{
+    return sleep;
 }
 
 }

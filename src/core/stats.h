@@ -80,6 +80,23 @@ public:
     friend StepsStats operator+(StepsStats lhs, const StepsStats& rhs);
 };
 
+class SleepStats : public Stats
+{
+private:
+    std::unique_ptr<Sleep> sleep;
+
+public:
+    explicit SleepStats();
+
+    const std::unique_ptr<Sleep>& get_stats() const;
+
+    SleepStats& operator+=(const Sleep& sleep);
+    SleepStats& operator+=(const SleepStats& other);
+    SleepStats& operator/(int n);
+    friend SleepStats operator+(SleepStats lhs, const Stats& rhs);
+    friend SleepStats operator+(SleepStats lhs, const SleepStats& rhs);
+};
+
 } // namespace fitgalgo
 
 #endif // _ES_RGMF_CORE_STATS_H

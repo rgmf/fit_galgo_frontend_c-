@@ -205,51 +205,6 @@ bool StepsData::load(const rapidjson::Document& document)
     return true;
 }
 
-SleepAssessment& SleepAssessment::operator+=(const SleepAssessment& rhs)
-{
-    this->combined_awake_score += rhs.combined_awake_score;
-    this->awake_time_score += rhs.awake_time_score;	
-    this->awakenings_count_score += rhs.awakenings_count_score;	
-    this->deep_sleep_score += rhs.deep_sleep_score;	
-    this->sleep_duration_score += rhs.sleep_duration_score;	
-    this->light_sleep_score += rhs.light_sleep_score;	
-    this->overall_sleep_score += rhs.overall_sleep_score;	
-    this->sleep_quality_score += rhs.sleep_quality_score;	
-    this->sleep_recovery_score += rhs.sleep_recovery_score;	
-    this->rem_sleep_score += rhs.rem_sleep_score;	
-    this->sleep_restlessness_score += rhs.sleep_restlessness_score;
-    this->awakenings_count += rhs.awakenings_count;
-    this->interruptions_score += rhs.interruptions_score;	
-    this->average_stress_during_sleep += rhs.average_stress_during_sleep;
-
-    return *this;
-}
-
-SleepAssessment operator+(SleepAssessment lhs, const SleepAssessment& rhs)
-{
-    lhs += rhs;
-    return lhs;
-}
-
-SleepAssessment& SleepAssessment::operator/(int n)
-{
-    this->combined_awake_score /= n;
-    this->awake_time_score /= n;
-    this->awakenings_count_score /= n;
-    this->deep_sleep_score /= n;
-    this->sleep_duration_score /= n;
-    this->light_sleep_score /= n;
-    this->overall_sleep_score /= n;
-    this->sleep_quality_score /= n;
-    this->sleep_recovery_score /= n;
-    this->rem_sleep_score /= n;
-    this->sleep_restlessness_score /= n;
-    this->awakenings_count /= n;
-    this->interruptions_score /= n;
-    this->average_stress_during_sleep /= n;
-    return *this;
-}
-
 bool Sleep::is_early_morning() const
 {
     if (this->dates.size() != 2)
@@ -264,28 +219,6 @@ bool Sleep::is_early_morning() const
 	return true;
     else
 	return false;
-}
-
-Sleep& Sleep::operator+=(const Sleep& rhs)
-{
-    if (this->zone_info.empty())
-	this->zone_info = rhs.zone_info;
-    this->assessment += rhs.assessment;
-    this->levels.insert(this->levels.end(), rhs.levels.begin(), rhs.levels.end());
-    this->dates.insert(this->dates.end(), rhs.dates.begin(), rhs.dates.end());
-    return *this;
-}
-
-Sleep operator+(Sleep lhs, const Sleep& rhs)
-{
-    lhs += rhs;
-    return lhs;
-}
-
-Sleep& Sleep::operator/(int n)
-{
-    this->assessment = this->assessment / n;
-    return *this;
 }
 
 bool SleepData::load(const rapidjson::Document& document)

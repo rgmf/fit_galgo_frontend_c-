@@ -121,10 +121,6 @@ struct SleepAssessment
     float awakenings_count{};
     float interruptions_score{};
     float average_stress_during_sleep{};
-
-    SleepAssessment& operator+=(const SleepAssessment& rhs);
-    friend SleepAssessment operator+(SleepAssessment lhs, const SleepAssessment& rhs);
-    SleepAssessment& operator/(int n);
 };
 
 struct SleepLevel
@@ -141,15 +137,6 @@ struct Sleep
     std::vector<std::string> dates{};
 
     bool is_early_morning() const;
-    Sleep& operator+=(const Sleep& rhs);
-    friend Sleep operator+(Sleep lhs, const Sleep& rhs);
-    Sleep& operator/(int n);
-};
-
-struct SleepWithCount
-{
-    Sleep sleep{};
-    size_t count{};
 };
 
 struct SleepData : public Data

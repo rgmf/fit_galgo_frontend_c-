@@ -1,10 +1,7 @@
 #ifndef _ES_RGMF_UI_PRINTER_H
 #define _ES_RGMF_UI_PRINTER_H 1
 
-#include <functional>
-#include <optional>
 #include <iostream>
-#include <iomanip>
 
 #include "colors.h"
 #include "repr.h"

@@ -1,3 +1,4 @@
+#include <memory>
 #ifndef _ES_RGMF_UI_PRINTER_H
 #define _ES_RGMF_UI_PRINTER_H 1
 
@@ -59,13 +60,15 @@ inline std::string value_formatted(
     return ss.str();
 }
 
-inline void print_steps_stats(const Steps& s, size_t days_count = 0)
+inline void print_steps_stats(const StepsStats& stats)
 {
-    print_value("Steps", unit(s.steps, "steps"));
-    print_value("Distance", distance(s.distance));
-    print_value("Calories", calories(s.calories));
-    if (days_count > 0)
-	print_value("Avg. Steps", unit((int) (s.steps / days_count), "steps/day"));
+    const std::unique_ptr<Steps>& steps = stats.get_stats();
+    
+    print_value("Steps", unit(steps->steps, "steps"));
+    print_value("Distance", distance(steps->distance));
+    print_value("Calories", calories(steps->calories));
+    if (stats.get_count() > 0)
+	print_value("Avg. Steps", unit((int) (steps->steps / stats.get_count()), "steps/day"));
     cout << endl;
 }
 

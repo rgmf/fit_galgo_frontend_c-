@@ -95,9 +95,6 @@ struct Steps
     int steps{};
     float distance{};
     int calories{};
-
-    Steps& operator+=(const Steps& rhs);
-    friend Steps operator+(Steps lhs, const Steps& rhs);
 };
 
 struct StepsData : public Data

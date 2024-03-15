@@ -397,21 +397,21 @@ void ShellSteps::all_times_stats() const
     }
 
     short current_year = this->data.steps.begin()->first.year();
-    Steps all_steps{};
+    StepsStats stats{};
     for (const auto& [idx, steps] : this->data.steps)
     {
 	if (current_year != idx.year())
 	{
 	    print_header(std::format("Year {}", current_year));
-	    print_steps_stats(all_steps);
+	    print_steps_stats(stats);
 	    current_year = idx.year();
-	    all_steps = Steps{};
+	    stats = StepsStats{};
 	}
-	all_steps += steps;
+	stats += steps;
     }
 
     print_header(std::format("Year {}", current_year));
-    print_steps_stats(all_steps);
+    print_steps_stats(stats);
 }
 
 void ShellSteps::year_stats() const
@@ -430,14 +430,14 @@ void ShellSteps::year_stats() const
 	return;
     }
 
-    Steps all_steps{};
+    StepsStats stats{};
     while (itr != this->data.steps.end() && itr->first.year() == year)
     {
-	all_steps += itr->second;
+	stats += itr->second;
 	itr++;
     }
 
-    print_steps_stats(all_steps);
+    print_steps_stats(stats);
 }
 
 void ShellSteps::month_stats() const
@@ -463,20 +463,16 @@ void ShellSteps::month_stats() const
      	return;
     }
 
-    Steps all_steps{};
-    size_t count_days = 0;
-    auto weekly_steps = std::map<std::string, Steps>();
+    StepsStats all_stats{};
+    auto weekly_stats = std::map<std::string, StepsStats>();
     size_t week_number = 1;
     size_t month_day = 1;
     while (itr != this->data.steps.end() && itr->first.ymd() <= last_wd_ymd)
     {
 	if (itr->first.month() == month)
-	{
-	    all_steps += itr->second;
-	    ++count_days;
-	}
+	    all_stats += itr->second;
 
-	weekly_steps["Week " + std::to_string(week_number)] += itr->second;
+	weekly_stats["Week " + std::to_string(week_number)] += itr->second;
 	if (month_day % 7 == 0)
 	    ++week_number;
 
@@ -497,23 +493,23 @@ void ShellSteps::month_stats() const
 
     cout << endl;
     auto tabular = Tabular();
-    for (const auto& [key, value] : weekly_steps)
+    for (const auto& [week, stats] : weekly_stats)
     {
-	tabular.add_header(key);
+	tabular.add_header(week);
 	tabular.add_values(
-	    key,
+	    week,
 	    {
-		unit(value.steps, "steps"),
-		distance(value.distance),
-		unit(value.calories, "kcal"),
-		unit(value.steps / 7, "steps/day")
+		unit(stats.get_stats()->steps, "steps"),
+		distance(stats.get_stats()->distance),
+		unit(stats.get_stats()->calories, "kcal"),
+		unit(stats.get_stats()->steps / 7, "steps/day")
 	    });
     }
     tabular.print();
 
     cout << endl;
     print_header("Total steps for month: " + MONTHS_NAMES[month - 1]);
-    print_steps_stats(all_steps, count_days);
+    print_steps_stats(all_stats);
 }
 
 ShellSleep::ShellSleep(const SleepData &sleep_data)
@@ -733,7 +729,7 @@ void ShellActivities::month_stats() const
     print_calendar();
 
     cout << endl;
-    
+
     const auto& aggregated = stats.get_stats();
 
     print_optional_stat<float>("Training Load Peak", aggregated->training_load_peak, value);

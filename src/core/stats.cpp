@@ -1,11 +1,26 @@
+#include <chrono>
+#include <memory>
+
 #include "stats.h"
 #include "api.h"
-#include <chrono>
-#include <concepts>
-#include <memory>
+#include "../utils/date.h"
 
 namespace fitgalgo
 {
+
+bool Stats::empty() const { return count == 0; }
+
+size_t Stats::get_count() const { return count; }
+
+const std::chrono::year_month_day& Stats::get_from_year_month_day() const
+{
+    return from;
+}
+    
+const std::chrono::year_month_day& Stats::get_to_year_month_day() const
+{
+    return to;
+}
 
 AggregatedStats::AggregatedStats(const std::map<DateIdx, std::unique_ptr<Activity>>& activities)
 {
@@ -77,8 +92,10 @@ AggregatedStats::AggregatedStats(
 }
 
 AggregatedStats::AggregatedStats(const AggregatedStats& other)
-    : from(other.from), to(other.to), count(other.count)
 {
+    from = other.from;
+    to = other.to;
+    count = other.count;
     if (other.activity)
     {
 	if (auto distance_a = dynamic_cast<const DistanceActivity*>(other.activity.get()))
@@ -118,29 +135,9 @@ AggregatedStats& AggregatedStats::operator=(const AggregatedStats& other)
     return *this;
 }
 
-bool AggregatedStats::empty() const
-{
-    return count == 0;
-}
-    
 const std::unique_ptr<Activity>& AggregatedStats::get_stats() const
 {
     return activity;
-}
-
-const std::chrono::year_month_day& AggregatedStats::get_from_year_month_day() const
-{
-    return from;
-}
-    
-const std::chrono::year_month_day& AggregatedStats::get_to_year_month_day() const
-{
-    return to;
-}
-
-size_t AggregatedStats::get_count() const
-{
-    return count;
 }
 
 std::optional<float> acc_optional(const std::optional<float> &lhs,
@@ -317,6 +314,78 @@ bool SportStats::empty() const
 const std::map<std::string, AggregatedStats>& SportStats::get_stats() const
 {
     return stats;
+}
+
+StepsStats::StepsStats()
+{
+    steps = std::make_unique<Steps>();
+}
+
+StepsStats& StepsStats::operator+=(const Steps &rhs)
+{
+    count++;
+
+    if (steps->datetime_utc.empty())
+	steps->datetime_utc = rhs.datetime_utc;
+    if (steps->datetime_local.empty())
+	steps->datetime_local = rhs.datetime_local;
+
+    if (from.year() != std::chrono::year{0} &&
+	from.month() != std::chrono::month{0} &&
+	from.day() != std::chrono::day{0})
+    {
+	from = from_isodate_to_ymd(rhs.datetime_utc);
+    }
+
+    to = from_isodate_to_ymd(rhs.datetime_utc);
+
+    steps->steps += rhs.steps;
+    steps->distance += rhs.steps;
+    steps->calories += rhs.steps;
+
+    return *this;
+}
+
+StepsStats &StepsStats::operator+=(const StepsStats &rhs)
+{
+    count++;
+
+    if (steps->datetime_utc.empty())
+	steps->datetime_utc = rhs.steps->datetime_utc;
+    if (steps->datetime_local.empty())
+	steps->datetime_local = rhs.steps->datetime_local;
+
+    if (from.year() != std::chrono::year{0} &&
+	from.month() != std::chrono::month{0} &&
+	from.day() != std::chrono::day{0})
+    {
+	from = rhs.from;
+    }
+
+    to = rhs.to;
+
+    steps->steps += rhs.steps->steps;
+    steps->distance += rhs.steps->distance;
+    steps->calories += rhs.steps->calories;
+
+    return *this;
+}
+
+StepsStats operator+(StepsStats lhs, const Steps& rhs)
+{
+    lhs += rhs;
+    return lhs;
+}
+
+StepsStats operator+(StepsStats lhs, const StepsStats& rhs)
+{
+    lhs += rhs;
+    return lhs;
+}
+
+const std::unique_ptr<Steps>& StepsStats::get_stats() const
+{
+    return steps;
 }
 
 }

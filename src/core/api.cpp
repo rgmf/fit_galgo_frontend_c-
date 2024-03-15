@@ -158,24 +158,6 @@ bool UploadedFileData::load(const rapidjson::Document& document)
     return true;
 }
 
-Steps& Steps::operator+=(const Steps& rhs)
-{
-    if (this->datetime_utc.empty())
-	this->datetime_utc = rhs.datetime_utc;
-    if (this->datetime_local.empty())
-	this->datetime_local = rhs.datetime_local;
-    this->steps += rhs.steps;
-    this->distance += rhs.distance;
-    this->calories += rhs.calories;
-    return *this;
-}
-
-Steps operator+(Steps lhs, const Steps& rhs)
-{
-    lhs += rhs;
-    return lhs;
-}
-
 bool StepsData::load(const rapidjson::Document& document)
 {
     const auto data = document.FindMember("data");

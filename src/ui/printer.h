@@ -180,6 +180,13 @@ inline void print_activities_stats(const std::unique_ptr<Activity>& a)
 	auto set_activity = static_cast<SetsActivity*>(a.get());
 	print_sets(set_activity->sets);
     }
+    else if (a->get_id() == ActivityType::DISTANCE)
+    {
+	cout << endl;
+	print_subheader("Stats detail");
+	//auto distance_activity = static_cast<DistanceActivity*>(a.get());
+	
+    }
 
     cout << endl;
 }

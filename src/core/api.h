@@ -157,6 +157,7 @@ std::ostream& operator<<(std::ostream& os, ActivityType at);
 
 struct Activity
 {
+    std::string id{};
     std::string zone_info{};
     std::string username{};
     std::string sport_profile_name{};
@@ -278,8 +279,8 @@ struct Lap
 {
     int message_index{};
 
-    float timestamp{};
-    float start_time{};
+    std::string timestamp{};
+    std::string start_time{};
 
     std::pair<float, float> start_lat_lon{};
     std::pair<float, float> end_lat_lon{};
@@ -326,6 +327,16 @@ struct Lap
 
     int avg_respiration_rate{};
     int max_respiration_rate{};
+};
+
+struct LapsData : public Data
+{
+    std::vector<Lap> laps;
+    std::vector<std::string> errors{};
+
+    LapsData() : laps(), errors() {}
+
+    bool load(const rapidjson::Document& document) override;
 };
 
 struct DistanceActivity : public Activity
@@ -428,6 +439,7 @@ public:
     const Result<StepsData> get_steps() const;
     const Result<SleepData> get_sleep() const;
     const Result<ActivitiesData> get_activities() const;
+    const Result<LapsData> get_activity_laps() const;
 };
 
 } // namespace fitgalgo

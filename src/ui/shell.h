@@ -71,6 +71,7 @@ class ShellActivities: public ShellStats
 {
 private:
     ActivitiesData data;
+    Connection connection;
 
     void all_times_stats() const override;
     void year_stats() const override;
@@ -80,7 +81,7 @@ private:
     void print_calendar() const;
 
 public:
-    explicit ShellActivities(const ActivitiesData& activities_data);
+    explicit ShellActivities(const ActivitiesData& activities_data, const Connection& conn);
 };
 
 } // namespace fitgalgo

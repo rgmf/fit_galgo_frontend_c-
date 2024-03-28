@@ -9,8 +9,10 @@ namespace fitgalgo
 
 std::string time(const float& v); 
 std::string date(const std::chrono::year_month_day& v); 
-std::string distance(const float& v); 
-std::string speed(const float& v); 
+std::string distance(const float& v);
+std::string speed(const float& v);
+std::string pace(const float& speed_mps);
+std::string heart_rate(const float& v);
 std::string elevation(const float& v); 
 std::string calories(const float& v); 
 std::string temperature(const float& v);

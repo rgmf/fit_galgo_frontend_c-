@@ -362,6 +362,126 @@ bool SleepData::load(const rapidjson::Document& document)
     return true;
 }
 
+bool LapsData::load(const rapidjson::Document& document)
+{
+    const auto data = document.FindMember("data");
+    if (data == document.MemberEnd() || !data->value.IsArray())
+    {
+	return false;
+    }
+
+    for (const auto& v : data->value.GetArray())
+    {
+	if (v.IsObject())
+	{
+	    Lap lap{};
+
+	    auto itr_mi = v.FindMember("message_index");
+	    auto itr_ts = v.FindMember("timestamp");
+	    auto itr_st = v.FindMember("start_time");
+	    auto itr_lat_sp = v.FindMember("start_position_lat");
+	    auto itr_lon_sp = v.FindMember("start_position_long");
+	    auto itr_lat_ep = v.FindMember("end_position_lat");
+	    auto itr_lon_ep = v.FindMember("end_position_long");
+	    auto itr_et = v.FindMember("total_elapsed_time");
+	    auto itr_tt = v.FindMember("total_timer_time");
+	    auto itr_mt = v.FindMember("total_moving_time");
+	    auto itr_td = v.FindMember("total_distance");
+	    auto itr_eavg_s = v.FindMember("enhanced_avg_speed");
+	    auto itr_avg_s = v.FindMember("avg_speed");
+	    auto itr_emax_s = v.FindMember("enhanced_max_speed");
+	    auto itr_max_s = v.FindMember("max_speed");
+	    auto itr_avg_hr = v.FindMember("avg_heart_rate");
+	    auto itr_max_hr = v.FindMember("max_heart_rate");
+	    auto itr_min_hr = v.FindMember("min_heart_rate");
+	    auto itr_avg_c = v.FindMember("avg_cadence");
+	    auto itr_max_c = v.FindMember("max_cadence");
+	    auto itr_avg_rc = v.FindMember("avg_running_cadence");
+	    auto itr_max_rc = v.FindMember("max_running_cadence");
+	    auto itr_asc = v.FindMember("total_ascent");
+	    auto itr_desc = v.FindMember("total_descent");
+	    auto itr_cal = v.FindMember("total_calories");
+
+	    if (itr_mi != v.MemberEnd() && itr_mi->value.IsInt())
+		lap.message_index = itr_mi->value.GetInt();
+
+	    if (itr_ts != v.MemberEnd() && itr_ts->value.IsString())
+		lap.timestamp = itr_ts->value.GetString();
+
+	    if (itr_st != v.MemberEnd() && itr_st->value.IsString())
+		lap.start_time = itr_st->value.GetString();
+
+	    if (itr_lat_sp != v.MemberEnd() && itr_lat_ep->value.IsInt() &&
+		itr_lon_sp != v.MemberEnd() && itr_lon_ep->value.IsInt())
+	    {
+		lap.start_lat_lon = {itr_lat_sp->value.GetInt(), itr_lon_sp->value.GetInt()};
+		lap.end_lat_lon = {itr_lat_ep->value.GetInt(), itr_lon_ep->value.GetInt()};
+	    }
+
+	    if (itr_et != v.MemberEnd() && itr_et->value.IsFloat())
+		lap.total_elapsed_time = itr_et->value.GetFloat();
+
+	    if (itr_tt != v.MemberEnd() && itr_tt->value.IsFloat())
+		lap.total_timer_time = itr_tt->value.GetFloat();
+
+	    if (itr_mt != v.MemberEnd() && itr_mt->value.IsFloat())
+		lap.total_moving_time = itr_mt->value.GetFloat();
+
+	    if (itr_td != v.MemberEnd() && itr_td->value.IsFloat())
+		lap.total_distance = itr_td->value.GetFloat();
+
+	    if (itr_eavg_s != v.MemberEnd() && itr_eavg_s->value.IsFloat())
+		lap.avg_speed = itr_eavg_s->value.GetFloat();
+	    else if (itr_avg_s != v.MemberEnd() && itr_avg_s->value.IsFloat())
+		lap.avg_speed = itr_avg_s->value.GetFloat();
+
+	    if (itr_emax_s != v.MemberEnd() && itr_emax_s->value.IsFloat())
+		lap.max_speed = itr_emax_s->value.GetFloat();
+	    else if (itr_max_s != v.MemberEnd() && itr_max_s->value.IsFloat())
+		lap.max_speed = itr_max_s->value.GetFloat();
+
+	    if (itr_emax_s != v.MemberEnd() && itr_emax_s->value.IsFloat())
+		lap.max_speed = itr_emax_s->value.GetFloat();
+	    else if (itr_max_s != v.MemberEnd() && itr_max_s->value.IsFloat())
+		lap.max_speed = itr_max_s->value.GetFloat();
+
+	    if (itr_avg_hr != v.MemberEnd() && itr_avg_hr->value.IsInt())
+		lap.avg_heart_rate = itr_avg_hr->value.GetInt();
+
+	    if (itr_max_hr != v.MemberEnd() && itr_max_hr->value.IsInt())
+		lap.max_heart_rate = itr_max_hr->value.GetInt();
+
+	    if (itr_min_hr != v.MemberEnd() && itr_min_hr->value.IsInt())
+		lap.min_heart_rate = itr_min_hr->value.GetInt();
+
+	    if (itr_avg_c != v.MemberEnd() && itr_avg_c->value.IsInt())
+		lap.avg_cadence = itr_avg_c->value.GetInt();
+
+	    if (itr_max_c != v.MemberEnd() && itr_max_c->value.IsInt())
+		lap.max_cadence = itr_max_c->value.GetInt();
+
+	    if (itr_avg_rc != v.MemberEnd() && itr_avg_rc->value.IsInt())
+		lap.avg_running_cadence = itr_avg_rc->value.GetInt();
+
+	    if (itr_max_rc != v.MemberEnd() && itr_max_rc->value.IsInt())
+		lap.max_running_cadence = itr_max_rc->value.GetInt();
+
+	    if (itr_asc != v.MemberEnd() && itr_asc->value.IsInt())
+		lap.total_ascent = itr_asc->value.GetInt();
+
+	    if (itr_desc != v.MemberEnd() && itr_desc->value.IsInt())
+		lap.total_descent = itr_desc->value.GetInt();
+
+	    if (itr_cal != v.MemberEnd() && itr_cal->value.IsInt())
+		lap.total_calories = itr_cal->value.GetInt();
+
+	    this->laps.emplace_back(lap);
+	}
+    }
+
+    return true;
+}
+
 std::ostream& operator<<(std::ostream& os, ActivityType at)
 {
     switch(at)
@@ -379,56 +499,16 @@ ActivityType Activity::get_id() const
 {
     return ActivityType::GENERIC;
 }
-/*
-void SetsActivity::merge(const std::unique_ptr<Activity>& a)
-{
-    Activity::merge(a);
-
-    if (a->get_id() != ActivityType::SETS)
-    {
-        const auto& sets = static_cast<SetsActivity*>(a.get())->sets;
-        this->sets.insert(this->sets.end(), sets.cbegin(), sets.cend());
-    }
-}
-*/
 
 ActivityType SetsActivity::get_id() const
 {
     return ActivityType::SETS;
 }
 
-/*
-void SplitsActivity::merge(const std::unique_ptr<Activity>& a)
-{
-    Activity::merge(a);
-
-    if (a->get_id() != ActivityType::SPLITS)
-    {
-        const auto& splits = static_cast<SplitsActivity*>(a.get())->splits;
-        this->splits.insert(this->splits.end(), splits.cbegin(), splits.cend());
-    }
-}
-*/
-
 ActivityType SplitsActivity::get_id() const
 {
     return ActivityType::SPLITS;
 }
-
-/*
-void DistanceActivity::merge(const std::unique_ptr<Activity>& a)
-{
-    Activity::merge(a);
-
-    if (a->get_id() != ActivityType::DISTANCE)
-    {
-	const auto& records = static_cast<DistanceActivity*>(a.get())->records;
-	const auto& laps = static_cast<DistanceActivity*>(a.get())->laps;
-	this->records.insert(this->records.end(), records.cbegin(), records.cend());
-	this->laps.insert(this->laps.end(), laps.cbegin(), laps.cend());
-    }
-}
-*/
 
 ActivityType DistanceActivity::get_id() const
 {
@@ -504,6 +584,7 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 	{
 	    std::unique_ptr<Activity> activity;
 
+	    auto itr_id = v.FindMember("id");
 	    auto itr_zone_info = v.FindMember("zone_info");
 	    auto itr_username = v.FindMember("username");
 	    auto itr_session = v.FindMember("session");
@@ -647,6 +728,11 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 	    else
 	    {
 		activity = std::make_unique<DistanceActivity>();
+	    }
+
+	    if (itr_id != v.MemberEnd() && itr_id->value.IsString())
+	    {
+		activity->id = itr_id->value.GetString();
 	    }
 
 	    if (itr_zone_info != v.MemberEnd() && itr_zone_info->value.IsString())
@@ -1073,6 +1159,17 @@ const Result<ActivitiesData> Connection::get_activities() const
     auto response = client.Get("/activities/");
 
     Result<ActivitiesData> result;
+    result.load(response);
+    return result;
+}
+
+const Result<LapsData> Connection::get_activity_laps(const std::string& activity_id) const
+{
+    httplib::Client client(this->host, this->port);
+    client.set_bearer_token_auth(this->token);
+    auto response = client.Get("/activities/" + activity_id + "/laps/");
+
+    Result<LapsData> result;
     result.load(response);
     return result;
 }

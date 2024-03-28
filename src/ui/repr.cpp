@@ -1,5 +1,8 @@
+#include <iomanip>
 #include <sstream>
 #include <chrono>
+#include <cmath>
+#include <iostream>
 
 #include "repr.h"
 
@@ -63,15 +66,36 @@ std::string date(const std::chrono::year_month_day& v)
 
 std::string distance(const float &v)
 {
-    if (v > 1000)
+    if (v >= 1000)
 	return formatted_number(v / 1000) + " km";
     else
-	return formatted_number(v / 1000) + " m";
+	return formatted_number(v) + " m";
 }
 
 std::string speed(const float& v)
 {
     return formatted_number(v * 3.6) + " km/h";
+}
+
+std::string pace(const float& speed_mps)
+{
+    float kmph = speed_mps * 3.6;
+    float kmpmin = 60 / kmph;
+    float min;
+    float decimal = std::modf(kmpmin, &min);
+    float seconds = decimal * 60;
+
+    std::stringstream ss;
+    ss << std::setw(2) << std::setfill('0') << static_cast<int>(min)
+       << ':'
+       << std::setw(2) << std::setfill('0') << static_cast<int>(seconds)
+       << " min/km";
+    return ss.str();
+}
+
+std::string heart_rate(const float &v)
+{
+    return formatted_number(static_cast<int>(v)) + " bpm";
 }
 
 std::string elevation(const float& v)

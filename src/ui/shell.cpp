@@ -188,7 +188,7 @@ inline void Shell::activities() const
 	auto result = this->connection.get_activities();
 	if (result.is_valid())
 	{
-	    auto ui = fitgalgo::ShellActivities(result.get_data());
+	    auto ui = fitgalgo::ShellActivities(result.get_data(), this->connection);
 	    ui.loop();
 	}
 	else
@@ -751,7 +751,8 @@ inline std::vector<std::string> activities_stats(const Activity* a)
     return result;
 }
 
-ShellActivities::ShellActivities(const ActivitiesData& activities_data)
+ShellActivities::ShellActivities(const ActivitiesData &activities_data, const Connection &conn)
+    : connection{conn}
 {
     const std::chrono::time_point now{std::chrono::system_clock::now()};
     const std::chrono::year_month_day ymd{std::chrono::floor<std::chrono::days>(now)};
@@ -916,6 +917,14 @@ void ShellActivities::item_by_item_stats() const
 	   itr->first.day() == day)
     {
 	print_activities_stats(itr->second);
+
+        if (itr->second->get_id() == ActivityType::DISTANCE)
+	{
+	    auto laps_data = this->connection.get_activity_laps(itr->second->id);
+	    if (laps_data.is_valid())
+		print_laps_stats(laps_data.get_data().laps);
+	}
+
 	itr++;
     }
 }

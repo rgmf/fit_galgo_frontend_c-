@@ -1,6 +1,8 @@
 #ifndef _ES_RGMF_UI_PRINTER_H
 #define _ES_RGMF_UI_PRINTER_H 1
 
+#include <string>
+#include <vector>
 #include <memory>
 #include <iostream>
 
@@ -135,6 +137,30 @@ inline void print_sets(const std::vector<Set>& sets)
     if (!row[0].second.empty())
     {
 	tabular.add_row(row);
+    }
+
+    tabular.print();
+}
+
+inline void print_laps_stats(const std::vector<Lap>& laps)
+{
+    print_subheader("Laps");
+
+    Tabular tabular{{"#", "Distance", "Time", "Avg. Speed", "Max. Speed","Avg. Pace", "Max. Pace", "Avg. HR", "Max. HR", "Ascent/Descent", "Calories"}};
+    for (const auto& lap : laps)
+    {
+	tabular.add_row({
+		{"#", std::to_string(lap.message_index)},
+		{"Distance", distance(lap.total_distance)},
+		{"Time", time(lap.total_moving_time ? lap.total_moving_time : lap.total_elapsed_time)},
+		{"Avg. Speed", speed(lap.avg_speed)},
+		{"Max. Speed", speed(lap.max_speed)},
+		{"Avg. Pace", pace(lap.avg_speed)},
+		{"Max. Pace", pace(lap.max_speed)},
+		{"Avg. HR", heart_rate(lap.avg_heart_rate)},
+		{"Max. HR", heart_rate(lap.max_heart_rate)},
+		{"Ascent/Descent", elevation(lap.total_ascent) + " / " + elevation(lap.total_descent)},
+		{"Calories", calories(lap.total_calories)}});
     }
 
     tabular.print();

@@ -989,6 +989,24 @@ TEST_CASE("Core Date: increment to not leap feb month", "[core_date]")
     REQUIRE(d.zone_info().minutes == 5);
 }
 
+TEST_CASE("Core Date: from not valid date to utc", "[core_date]")
+{
+    iso_date d{"is nos a valid date"};
+    REQUIRE(d.iso_utc().value() == "0000-00-00T00:00:00Z");
+}
+
+TEST_CASE("Core Date: from date to utc", "[core_date]")
+{
+    iso_date d{"2024-03-31"};
+    REQUIRE(d.iso_utc().value() == "2024-03-31T00:00:00Z");
+}
+
+TEST_CASE("Core Date: from datetime without offset to utc", "[core_date]")
+{
+    iso_date d{"2024-03-31T12:13:14"};
+    REQUIRE(d.iso_utc().value() == "2024-03-31T12:13:14Z");
+}
+
 TEST_CASE("Core Date: from datetime with offset -05:00 to utc", "[core_date]")
 {
     iso_date d{"2024-03-31T15:30:00-05:00"};

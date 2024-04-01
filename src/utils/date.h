@@ -1,29 +1,61 @@
-#ifndef _ES_RGMF_UTILS_DATE_H
-#define _ES_RGMF_UTILS_DATE_H 1
+#ifndef ES_RGMF_UTILS_DATE_H
+#define ES_RGMF_UTILS_DATE_H 1
 
 #include <chrono>
+
+using chrono_ymd = std::chrono::year_month_day;
+using chrono_year = std::chrono::year;
+using chrono_month = std::chrono::month;
+using chrono_day = std::chrono::day;
 
 namespace fitgalgo
 {
 
-inline std::chrono::year_month_day today_ymd()
+inline bool is_valid_date(const short& y, const short& m, const short& d)
+{
+    if (y < 0 || m < 1 || m > 12 || d < 1 || d > 31)
+        return false;
+
+    if ((m == 4 || m == 6 || m == 9 || m == 11) && d > 30)
+        return false;
+
+    if (m == 2) {
+        bool leap_y = (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0);
+        if ((leap_y && d > 29) || (!leap_y && d > 28))
+            return false;
+    }
+
+    return true;
+}
+
+inline bool is_valid_time(const short& h, const short& m, const short& s)
+{
+    return h >= 0 && h <= 24 && m >= 0 && m <= 59 && s >= 0 && s <= 59;
+}
+
+inline bool is_valid_zoneinfo(const short& h, const short &m)
+{
+    return h >= -23 && h <= 23 && m >= 0 && m <= 59;
+}
+
+inline chrono_ymd today_ymd()
 {
     const std::chrono::time_point now{std::chrono::system_clock::now()};
-    const std::chrono::year_month_day ymd{std::chrono::floor<std::chrono::days>(now)};
+    const chrono_ymd ymd{std::chrono::floor<std::chrono::days>(now)};
     return ymd;
 }
 
 inline ushort last_month_day(const int& year, const ushort& month)
 {
-    auto first_day_of_next_month = std::chrono::year(year) /
-	std::chrono::month(month + 1) /
-	std::chrono::day(1);
-    auto last_day_of_this_month = std::chrono::year_month_day(
-	std::chrono::sys_days(first_day_of_next_month) - std::chrono::days(1));
+    auto first_day_of_next_month = chrono_year(year) /
+	chrono_month(month + 1) /
+	chrono_day(1);
+    auto last_day_of_this_month = chrono_ymd(std::chrono::sys_days(first_day_of_next_month) -
+ std::chrono::days(1));
     return unsigned(last_day_of_this_month.day());
 }
 
-inline std::chrono::year_month_day from_isodate_to_ymd(const std::string& iso_date)
+inline chrono_ymd from_isodate_to_ymd(const std::string& iso_date)
 {
     std::stringstream ss(iso_date);
     std::string token;
@@ -33,9 +65,9 @@ inline std::chrono::year_month_day from_isodate_to_ymd(const std::string& iso_da
     unsigned int month = std::stoi(token);
     std::getline(ss, token);
     unsigned int day = std::stoi(token);
-    return std::chrono::year_month_day{std::chrono::year{year}, std::chrono::month{month}, std::chrono::day{day}};
+    return chrono_ymd{chrono_year{year}, chrono_month{month}, chrono_day{day}};
 }
 
 } // namespace fitgalgo
 
-#endif // _ES_RGMF_UTILS_DATE_H
+#endif // ES_RGMF_UTILS_DATE_H

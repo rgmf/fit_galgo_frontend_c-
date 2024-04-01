@@ -10,8 +10,39 @@ endif()
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 
-set(SOURCES src/main.cpp src/core/api.cpp src/core/stats.cpp src/ui/shell.cpp src/ui/calendar.cpp src/ui/repr.cpp src/ui/colors.cpp)
+set(SOURCES
+  src/core/date.cpp
+
+  
+  src/main.cpp
+  src/core/api.cpp
+  src/core/stats.cpp
+  src/ui/shell.cpp
+  src/ui/calendar.cpp
+  src/ui/repr.cpp
+  src/ui/colors.cpp)
 
 include_directories(include)
 
 add_executable(fitgalgo ${SOURCES})
+
+set(TEST_SOURCES
+  test/test_core_date.cpp
+  src/core/date.cpp)
+
+find_package(Catch2 3 REQUIRED)
+# These tests can use the Catch2-provided main
+add_executable(tests ${TEST_SOURCES})
+target_link_libraries(tests PRIVATE Catch2::Catch2WithMain sqlite3)
+# These tests need their own main
+#add_executable(custom-main-tests test.cpp test-main.cpp)
+#target_link_libraries(custom-main-tests PRIVATE Catch2::Catch2)
+
+target_compile_definitions(tests PRIVATE ES_RGMF_FITGALGO_TESTING=1)
+
+# Enable testing
+include(CTest)
+include(Catch)
+
+# Add tests to CTest
+catch_discover_tests(tests)

@@ -1121,53 +1121,65 @@ TEST_CASE("Core Date: increment to not leap feb month", "[core_date]")
 TEST_CASE("Core Date: from not valid date to utc", "[core_date]")
 {
     iso_date d{"is nos a valid date"};
-    REQUIRE(d.iso_utc().value() == "0000-00-00T00:00:00Z");
+    REQUIRE(d.utc().value() == "0000-00-00T00:00:00Z");
 }
 
 TEST_CASE("Core Date: from date to utc", "[core_date]")
 {
     iso_date d{"2024-03-31"};
-    REQUIRE(d.iso_utc().value() == "2024-03-31T00:00:00Z");
+    REQUIRE(d.utc().value() == "2024-03-31T00:00:00Z");
 }
 
 TEST_CASE("Core Date: from datetime without offset to utc", "[core_date]")
 {
     iso_date d{"2024-03-31T12:13:14"};
-    REQUIRE(d.iso_utc().value() == "2024-03-31T12:13:14Z");
+    REQUIRE(d.utc().value() == "2024-03-31T12:13:14Z");
 }
 
 TEST_CASE("Core Date: from datetime with offset -05:00 to utc", "[core_date]")
 {
     iso_date d{"2024-03-31T15:30:00-05:00"};
-    REQUIRE(d.iso_utc().value() == "2024-03-31T20:30:00Z");
+    REQUIRE(d.utc().value() == "2024-03-31T20:30:00Z");
 }
 
 TEST_CASE("Core Date: from datetime with offset +02:30 to utc", "[core_date]")
 {
     iso_date d{"2023-07-15T10:45:00+02:30"};
-    REQUIRE(d.iso_utc().value() == "2023-07-15T08:15:00Z");
+    REQUIRE(d.utc().value() == "2023-07-15T08:15:00Z");
 }
 
 TEST_CASE("Core Date: from datetime in a utc format to utc", "[core_date]")
 {
     iso_date d{"2025-12-01T23:59:59Z"};
-    REQUIRE(d.iso_utc().value() == "2025-12-01T23:59:59Z");
+    REQUIRE(d.utc().value() == "2025-12-01T23:59:59Z");
 }
 
 TEST_CASE("Core Date: from datetime with offset -06:00 to utc with day change", "[core_date]")
 {
     iso_date d{"2023-03-31T23:30:00-06:00"};
-    REQUIRE(d.iso_utc().value() == "2023-04-01T05:30:00Z");
+    REQUIRE(d.utc().value() == "2023-04-01T05:30:00Z");
 }
 
 TEST_CASE("Core Date: from datetime with offset -04:00 to utc with day change", "[core_date]")
 {
     iso_date d{"2025-11-30T23:45:00-04:00"};
-    REQUIRE(d.iso_utc().value() == "2025-12-01T03:45:00Z");
+    REQUIRE(d.utc().value() == "2025-12-01T03:45:00Z");
 }
 
 TEST_CASE("Core Date: from datetime with offset -03:00 to utc with day change", "[core_date]")
 {
     iso_date d{"2024-06-30T23:59:59-01:00"};
-    REQUIRE(d.iso_utc().value() == "2024-07-01T00:59:59Z");
+    REQUIRE(d.utc().value() == "2024-07-01T00:59:59Z");
+}
+
+TEST_CASE("Core Date: from datetime in a utc with 0 millis format to utc", "[core_date]")
+{
+    iso_date d{"2025-12-01T23:59:59.000Z"};
+    REQUIRE(d.utc().value() == "2025-12-01T23:59:59Z");
+}
+
+TEST_CASE("Core Date: from datetime in a utc with millis format to utc", "[core_date]")
+{
+    iso_date d{"2025-12-01T23:59:59.001Z"};
+    REQUIRE(d.utc().value() == "2025-12-01T23:59:59.001Z");
 }

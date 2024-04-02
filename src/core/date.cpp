@@ -202,7 +202,7 @@ iso_date& iso_date::operator++()
     return *this;
 }
 
-iso_date iso_date::iso_utc() const
+iso_date iso_date::utc() const
 {
     auto copy{*this};
 
@@ -244,8 +244,10 @@ iso_date iso_date::iso_utc() const
         << '-' << std::setw(2) << std::setfill('0') << copy.date_.day
         << 'T' << std::setw(2) << std::setfill('0') << copy.time_.hour
         << ':' << std::setw(2) << std::setfill('0') << copy.time_.minutes
-        << ':' << std::setw(2) << std::setfill('0') << copy.time_.seconds
-        << 'Z';
+        << ':' << std::setw(2) << std::setfill('0') << copy.time_.seconds;
+    if (copy.time_.millis > 0)
+	oss << '.' << std::setw(3) << std::setfill('0') << copy.time_.millis;
+    oss << 'Z';
     copy.value_ = oss.str();
 
     return copy;
@@ -253,7 +255,7 @@ iso_date iso_date::iso_utc() const
 
 bool operator<(const iso_date& l, const iso_date& r)
 {
-    return l.iso_utc().value_ < r.iso_utc().value_;
+    return l.utc().value_ < r.utc().value_;
 }
 
 }

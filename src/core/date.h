@@ -76,7 +76,7 @@ public:
     const time_t& time() const;
     const zone_info_t& zone_info() const;
 
-    iso_date iso_utc() const;
+    iso_date utc() const;
 
     iso_date& operator--();
     iso_date& operator++();

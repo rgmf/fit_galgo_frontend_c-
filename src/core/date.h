@@ -38,6 +38,7 @@ struct time_t
     short hour{};
     ushort minutes{};
     ushort seconds{};
+    ushort millis{};
 };
 
 struct zone_info_t

@@ -65,71 +65,70 @@ inline chrono_ymd from_isodate_to_ymd(const string& iso_date)
     return chrono_ymd{chrono_year{year}, chrono_month{month}, chrono_day{day}};
 }
 
-iso_date::iso_date(const string& v)
+iso_date::iso_date(const string& v) : value_{v}, ymd_{}, date_type_{date_type_e::INVALID}
 {
-    std::regex iso8601_datetime_zi_regex{"^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[+-]\\d{2}:\\d{2}$"};
-    std::regex iso8601_datetime_zi_z_regex{"^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"};
-    std::regex iso8601_datetime_regex{"^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"};
-    std::regex iso8601_date_regex{"^\\d{4}-\\d{2}-\\d{2}$"};
-    bool is_dt_zi = false;
-    bool is_dt_zi_z = false;
-    bool is_dt = false;
-    bool is_date = false;
+    std::regex iso8601_date{"^\\d{4}-\\d{2}-\\d{2}$"};
+    std::regex iso8601_datetime{"^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?$"};
+    std::regex iso8601_datetime_zi{"^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?(Z|[+-]\\d{2}:\\d{2})$"};
 
-    if (!(is_dt_zi = std::regex_match(v, iso8601_datetime_zi_regex)) &&
-	!(is_dt_zi_z = std::regex_match(v, iso8601_datetime_zi_z_regex)) &&
-	!(is_dt = std::regex_match(v, iso8601_datetime_regex)) &&
-	!(is_date = std::regex_match(v, iso8601_date_regex)))
+    if (std::regex_match(v, iso8601_date))
     {
-	value_ = v;
-	ymd_ = {};
-	date_type_ = date_type_e::INVALID;
-	return;
+	date_ = {
+	    .year=(short)(std::atoi(v.substr(0, 4).c_str())),
+	    .month=(ushort)(std::atoi(v.substr(5, 2).c_str())),
+	    .day=(ushort)(std::atoi(v.substr(8, 2).c_str()))
+	};
+	if (is_valid_date(date_))
+	{
+	    ymd_ = chrono_ymd{chrono_year{date_.year},chrono_month{(unsigned)date_.month},
+		chrono_day{(unsigned)date_.day}};
+	    date_type_ = date_type_e::DATE;
+	}
     }
-
-    date_ = {
-	.year=(short)(std::atoi(v.substr(0, 4).c_str())),
-	.month=(ushort)(std::atoi(v.substr(5, 2).c_str())),
-	.day=(ushort)(std::atoi(v.substr(8, 2).c_str()))
-    };
-
-    time_ = {
-	.hour=(short)(is_dt || is_dt_zi || is_dt_zi_z ? std::atoi(v.substr(11, 2).c_str()) : 0),
-	.minutes=(ushort)(is_dt || is_dt_zi || is_dt_zi_z ? std::atoi(v.substr(14, 2).c_str()) : 0),
-	.seconds=(ushort)(is_dt || is_dt_zi || is_dt_zi_z ? std::atoi(v.substr(17, 2).c_str()) : 0)
-    };
-
-    zone_info_ = {
-	.hours=(short)(is_dt_zi ? std::atoi(v.substr(19, 3).c_str()) : 0),
-	.minutes=(ushort)(is_dt_zi ? (unsigned)std::atoi(v.substr(23, 2).c_str()) : 0)
-    };
-
-    short year = std::atoi(v.substr(0, 4).c_str());
-    short month = std::atoi(v.substr(5, 2).c_str());
-    short day = std::atoi(v.substr(8, 2).c_str());
-
-    if (!is_valid_date(date_) || !is_valid_time(time_) || !is_valid_zoneinfo(zone_info_))
+    else if (std::regex_match(v, iso8601_datetime))
     {
-	value_ = v;
-	ymd_ = {};
-	date_type_ = date_type_e::INVALID;
-	return;
+	date_ = {
+	    .year=(short)(std::atoi(v.substr(0, 4).c_str())),
+	    .month=(ushort)(std::atoi(v.substr(5, 2).c_str())),
+	    .day=(ushort)(std::atoi(v.substr(8, 2).c_str()))
+	};
+	time_ = {
+	    .hour=(short)std::atoi(v.substr(11, 2).c_str()),
+	    .minutes=(ushort)std::atoi(v.substr(14, 2).c_str()),
+	    .seconds=(ushort)std::atoi(v.substr(17, 2).c_str()),
+	    .millis=(ushort)(v.find('.') != string::npos ? std::atoi(v.substr(20, 3).c_str()) : 0)
+	};
+	if (is_valid_date(date_) && is_valid_time(time_))
+	{
+	    ymd_ = chrono_ymd{chrono_year{date_.year},chrono_month{(unsigned)date_.month},
+		chrono_day{(unsigned)date_.day}};
+	    date_type_ = date_type_e::DATETIME;
+	}
     }
-
-    if (is_dt_zi || is_dt_zi_z || is_dt)
+    else if (std::regex_match(v, iso8601_datetime_zi))
     {
-	value_ = v;
-	ymd_ = chrono_ymd{chrono_year{year}, chrono_month{(unsigned)month}, chrono_day{(unsigned)day}};
-	date_type_ = date_type_e::DATETIME;
-	return;
-    }
-
-    if (is_date)
-    {
-	value_ = v;
-	ymd_ = chrono_ymd{chrono_year{year}, chrono_month{(unsigned)month}, chrono_day{(unsigned)day}};
-	date_type_ = date_type_e::DATE;
-	return;
+	date_ = {
+	    .year=(short)(std::atoi(v.substr(0, 4).c_str())),
+	    .month=(ushort)(std::atoi(v.substr(5, 2).c_str())),
+	    .day=(ushort)(std::atoi(v.substr(8, 2).c_str()))
+	};
+	time_ = {
+	    .hour=(short)std::atoi(v.substr(11, 2).c_str()),
+	    .minutes=(ushort)std::atoi(v.substr(14, 2).c_str()),
+	    .seconds=(ushort)std::atoi(v.substr(17, 2).c_str()),
+	    .millis=(ushort)(v.find('.') != string::npos ? std::atoi(v.substr(20, 3).c_str()) : 0)
+	};
+	size_t p = v.find('Z');
+	zone_info_ = {
+	    .hours=(short)(p == string::npos ? std::atoi(v.substr(v.size() - 6, 3).c_str()) : 0),
+	    .minutes=(ushort)(p == string::npos ? std::atoi(v.substr(v.size() - 2, 2).c_str()) : 0)
+	};
+	if (is_valid_date(date_) && is_valid_time(time_) && is_valid_zoneinfo(zone_info_))
+	{
+	    ymd_ = chrono_ymd{chrono_year{date_.year},chrono_month{(unsigned)date_.month},
+		chrono_day{(unsigned)date_.day}};
+	    date_type_ = date_type_e::DATETIME;
+	}
     }
 }
 

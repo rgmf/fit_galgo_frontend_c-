@@ -20,6 +20,7 @@ TEST_CASE("Core Date: empty string", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -39,6 +40,7 @@ TEST_CASE("Core Date: invalid string: less than 10 chars", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -58,6 +60,7 @@ TEST_CASE("Core Date: invalid string: 10 chars", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -77,6 +80,7 @@ TEST_CASE("Core Date: invalid iso_date day", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -96,6 +100,7 @@ TEST_CASE("Core Date: invalid date month", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -115,6 +120,7 @@ TEST_CASE("Core Date: invalid no leap date", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -134,6 +140,7 @@ TEST_CASE("Core Date: invalid leap date", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -153,6 +160,7 @@ TEST_CASE("Core Date: invalid string: less than 19 chars", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -172,6 +180,7 @@ TEST_CASE("Core Date: invalid string: 19 chars", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -191,6 +200,7 @@ TEST_CASE("Core Date: invalid datetime day", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -210,6 +220,7 @@ TEST_CASE("Core Date: invalid datetime month", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -229,6 +240,7 @@ TEST_CASE("Core Date: invalid no leap datetime", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -248,6 +260,7 @@ TEST_CASE("Core Date: invalid leap datetime", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -267,15 +280,16 @@ TEST_CASE("Core Date: invalid datetime hour", "[core_date]")
     REQUIRE(d.time().hour == 25);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
 
 TEST_CASE("Core Date: invalid datetime minutes", "[core_date]")
 {
-    iso_date d{"2020-04-30T22:60:00"};
+    iso_date d{"2020-04-30T22:60:00.999"};
     REQUIRE(d.date_type() == date_type_e::INVALID);
-    REQUIRE(d.value() == "2020-04-30T22:60:00");
+    REQUIRE(d.value() == "2020-04-30T22:60:00.999");
     REQUIRE(d.ymd().ok() == false);
     REQUIRE(d.ymd().year() == chrono_year{0});
     REQUIRE(d.ymd().month() == chrono_month{0});
@@ -286,6 +300,7 @@ TEST_CASE("Core Date: invalid datetime minutes", "[core_date]")
     REQUIRE(d.time().hour == 22);
     REQUIRE(d.time().minutes == 60);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 999);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -324,6 +339,7 @@ TEST_CASE("Core Date: no iso8601 date", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -343,6 +359,7 @@ TEST_CASE("Core Date: no iso8601 datetime", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -362,6 +379,7 @@ TEST_CASE("Core Date: no iso8601 datetime (with no T)", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -381,6 +399,7 @@ TEST_CASE("Core Date: no iso8601 datetime (with no numbers)", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -400,6 +419,7 @@ TEST_CASE("Core Date: not a valid year (two digits year)", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -419,15 +439,16 @@ TEST_CASE("Core Date: not a valid positive hour zone info", "[core_date]")
     REQUIRE(d.time().hour == 9);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 36);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 25);
     REQUIRE(d.zone_info().minutes == 0);
 }
 
 TEST_CASE("Core Date: not a valid negative hour zone info", "[core_date]")
 {
-    iso_date d{"2020-10-10T09:10:36-25:00"};
+    iso_date d{"2020-10-10T09:10:36.987-25:00"};
     REQUIRE(d.date_type() == date_type_e::INVALID);
-    REQUIRE(d.value() == "2020-10-10T09:10:36-25:00");
+    REQUIRE(d.value() == "2020-10-10T09:10:36.987-25:00");
     REQUIRE(d.ymd().ok() == false);
     REQUIRE(d.ymd().year() == chrono_year{0});
     REQUIRE(d.ymd().month() == chrono_month{0});
@@ -438,15 +459,16 @@ TEST_CASE("Core Date: not a valid negative hour zone info", "[core_date]")
     REQUIRE(d.time().hour == 9);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 36);
+    REQUIRE(d.time().millis == 987);
     REQUIRE(d.zone_info().hours == -25);
     REQUIRE(d.zone_info().minutes == 0);
 }
 
 TEST_CASE("Core Date: not a valid positive minutes zone info", "[core_date]")
 {
-    iso_date d{"2020-10-10T09:10:36+08:60"};
+    iso_date d{"2020-10-10T09:10:36.036+08:60"};
     REQUIRE(d.date_type() == date_type_e::INVALID);
-    REQUIRE(d.value() == "2020-10-10T09:10:36+08:60");
+    REQUIRE(d.value() == "2020-10-10T09:10:36.036+08:60");
     REQUIRE(d.ymd().ok() == false);
     REQUIRE(d.ymd().year() == chrono_year{0});
     REQUIRE(d.ymd().month() == chrono_month{0});
@@ -457,6 +479,7 @@ TEST_CASE("Core Date: not a valid positive minutes zone info", "[core_date]")
     REQUIRE(d.time().hour == 9);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 36);
+    REQUIRE(d.time().millis == 36);
     REQUIRE(d.zone_info().hours == 8);
     REQUIRE(d.zone_info().minutes == 60);
 }
@@ -476,6 +499,7 @@ TEST_CASE("Core Date: not a valid negative minutes zone info", "[core_date]")
     REQUIRE(d.time().hour == 9);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 36);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == -10);
     REQUIRE(d.zone_info().minutes == 60);
 }
@@ -495,15 +519,16 @@ TEST_CASE("Core Date: valid date", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
 
 TEST_CASE("Core Date: valid datetime", "[core_date]")
 {
-    iso_date d{"2020-10-10T09:10:36"};
+    iso_date d{"2020-10-10T09:10:36.009"};
     REQUIRE(d.date_type() == date_type_e::DATETIME);
-    REQUIRE(d.value() == "2020-10-10T09:10:36");
+    REQUIRE(d.value() == "2020-10-10T09:10:36.009");
     REQUIRE(d.ymd().ok() == true);
     REQUIRE(d.ymd().year() == chrono_year{2020});
     REQUIRE(d.ymd().month() == chrono_month{10});
@@ -514,6 +539,7 @@ TEST_CASE("Core Date: valid datetime", "[core_date]")
     REQUIRE(d.time().hour == 9);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 36);
+    REQUIRE(d.time().millis == 9);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -533,6 +559,7 @@ TEST_CASE("Core Date: valid datetime with +2 zone info", "[core_date]")
     REQUIRE(d.time().hour == 9);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 36);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 2);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -552,6 +579,7 @@ TEST_CASE("Core Date: valid datetime with -02:45 zone info", "[core_date]")
     REQUIRE(d.time().hour == 9);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 36);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == -2);
     REQUIRE(d.zone_info().minutes == 45);
 }
@@ -571,6 +599,87 @@ TEST_CASE("Core Date: valid datetime with Z zone info", "[core_date]")
     REQUIRE(d.time().hour == 9);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 36);
+    REQUIRE(d.time().millis == 0);
+    REQUIRE(d.zone_info().hours == 0);
+    REQUIRE(d.zone_info().minutes == 0);
+}
+
+TEST_CASE("Core Date: valid datetime with Z zone info and millis", "[core_date]")
+{
+    iso_date d{"2020-10-10T09:10:36.054Z"};
+    REQUIRE(d.date_type() == date_type_e::DATETIME);
+    REQUIRE(d.value() == "2020-10-10T09:10:36.054Z");
+    REQUIRE(d.ymd().ok() == true);
+    REQUIRE(d.ymd().year() == chrono_year{2020});
+    REQUIRE(d.ymd().month() == chrono_month{10});
+    REQUIRE(d.ymd().day() == chrono_day{10});
+    REQUIRE(d.date().year == 2020);
+    REQUIRE(d.date().month == 10);
+    REQUIRE(d.date().day == 10);
+    REQUIRE(d.time().hour == 9);
+    REQUIRE(d.time().minutes == 10);
+    REQUIRE(d.time().seconds == 36);
+    REQUIRE(d.time().millis == 54);
+    REQUIRE(d.zone_info().hours == 0);
+    REQUIRE(d.zone_info().minutes == 0);
+}
+
+TEST_CASE("Core Date: invalid millis in datetime without zone info", "[core_date]")
+{
+    iso_date d{"2020-10-10T09:10:36.45"};
+    REQUIRE(d.date_type() == date_type_e::INVALID);
+    REQUIRE(d.value() == "2020-10-10T09:10:36.45");
+    REQUIRE(d.ymd().ok() == false);
+    REQUIRE(d.ymd().year() == chrono_year{0});
+    REQUIRE(d.ymd().month() == chrono_month{0});
+    REQUIRE(d.ymd().day() == chrono_day{0});
+    REQUIRE(d.date().year == 0);
+    REQUIRE(d.date().month == 0);
+    REQUIRE(d.date().day == 0);
+    REQUIRE(d.time().hour == 0);
+    REQUIRE(d.time().minutes == 0);
+    REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
+    REQUIRE(d.zone_info().hours == 0);
+    REQUIRE(d.zone_info().minutes == 0);
+}
+
+TEST_CASE("Core Date: invalid millis in datetime with Z", "[core_date]")
+{
+    iso_date d{"2020-10-10T09:10:36.4545Z"};
+    REQUIRE(d.date_type() == date_type_e::INVALID);
+    REQUIRE(d.value() == "2020-10-10T09:10:36.4545Z");
+    REQUIRE(d.ymd().ok() == false);
+    REQUIRE(d.ymd().year() == chrono_year{0});
+    REQUIRE(d.ymd().month() == chrono_month{0});
+    REQUIRE(d.ymd().day() == chrono_day{0});
+    REQUIRE(d.date().year == 0);
+    REQUIRE(d.date().month == 0);
+    REQUIRE(d.date().day == 0);
+    REQUIRE(d.time().hour == 0);
+    REQUIRE(d.time().minutes == 0);
+    REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
+    REQUIRE(d.zone_info().hours == 0);
+    REQUIRE(d.zone_info().minutes == 0);
+}
+
+TEST_CASE("Core Date: invalid millis in datetime with zone info", "[core_date]")
+{
+    iso_date d{"2020-10-10T09:10:36.5+02:30"};
+    REQUIRE(d.date_type() == date_type_e::INVALID);
+    REQUIRE(d.value() == "2020-10-10T09:10:36.5+02:30");
+    REQUIRE(d.ymd().ok() == false);
+    REQUIRE(d.ymd().year() == chrono_year{0});
+    REQUIRE(d.ymd().month() == chrono_month{0});
+    REQUIRE(d.ymd().day() == chrono_day{0});
+    REQUIRE(d.date().year == 0);
+    REQUIRE(d.date().month == 0);
+    REQUIRE(d.date().day == 0);
+    REQUIRE(d.time().hour == 0);
+    REQUIRE(d.time().minutes == 0);
+    REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -590,6 +699,7 @@ TEST_CASE("Core Date: decrement a simple date", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 
@@ -606,6 +716,7 @@ TEST_CASE("Core Date: decrement a simple date", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -625,6 +736,7 @@ TEST_CASE("Core Date: decrement with month changing", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 
@@ -641,6 +753,7 @@ TEST_CASE("Core Date: decrement with month changing", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -660,6 +773,7 @@ TEST_CASE("Core Date: decrement with month and year changing", "[core_date]")
     REQUIRE(d.time().hour == 10);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 10);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 5);
     REQUIRE(d.zone_info().minutes == 5);
 
@@ -676,6 +790,7 @@ TEST_CASE("Core Date: decrement with month and year changing", "[core_date]")
     REQUIRE(d.time().hour == 10);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 10);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 5);
     REQUIRE(d.zone_info().minutes == 5);
 }
@@ -695,6 +810,7 @@ TEST_CASE("Core Date: decrement to leap feb month", "[core_date]")
     REQUIRE(d.time().hour == 10);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 10);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == -5);
     REQUIRE(d.zone_info().minutes == 5);
 
@@ -711,6 +827,7 @@ TEST_CASE("Core Date: decrement to leap feb month", "[core_date]")
     REQUIRE(d.time().hour == 10);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 10);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == -5);
     REQUIRE(d.zone_info().minutes == 5);
 }
@@ -730,6 +847,7 @@ TEST_CASE("Core Date: decrement to not leap feb month", "[core_date]")
     REQUIRE(d.time().hour == 10);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 10);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == -5);
     REQUIRE(d.zone_info().minutes == 5);
 
@@ -746,6 +864,7 @@ TEST_CASE("Core Date: decrement to not leap feb month", "[core_date]")
     REQUIRE(d.time().hour == 10);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 10);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == -5);
     REQUIRE(d.zone_info().minutes == 5);
 }
@@ -829,6 +948,7 @@ TEST_CASE("Core Date: increment a simple date", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 
@@ -845,6 +965,7 @@ TEST_CASE("Core Date: increment a simple date", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -864,6 +985,7 @@ TEST_CASE("Core Date: increment with month changing", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 
@@ -880,6 +1002,7 @@ TEST_CASE("Core Date: increment with month changing", "[core_date]")
     REQUIRE(d.time().hour == 0);
     REQUIRE(d.time().minutes == 0);
     REQUIRE(d.time().seconds == 0);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 0);
     REQUIRE(d.zone_info().minutes == 0);
 }
@@ -899,6 +1022,7 @@ TEST_CASE("Core Date: increment with month and year changing", "[core_date]")
     REQUIRE(d.time().hour == 10);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 10);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 5);
     REQUIRE(d.zone_info().minutes == 5);
 
@@ -915,6 +1039,7 @@ TEST_CASE("Core Date: increment with month and year changing", "[core_date]")
     REQUIRE(d.time().hour == 10);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 10);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == 5);
     REQUIRE(d.zone_info().minutes == 5);
 }
@@ -934,6 +1059,7 @@ TEST_CASE("Core Date: increment to leap feb month", "[core_date]")
     REQUIRE(d.time().hour == 10);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 10);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == -5);
     REQUIRE(d.zone_info().minutes == 5);
 
@@ -950,6 +1076,7 @@ TEST_CASE("Core Date: increment to leap feb month", "[core_date]")
     REQUIRE(d.time().hour == 10);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 10);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == -5);
     REQUIRE(d.zone_info().minutes == 5);
 }
@@ -969,6 +1096,7 @@ TEST_CASE("Core Date: increment to not leap feb month", "[core_date]")
     REQUIRE(d.time().hour == 10);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 10);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == -5);
     REQUIRE(d.zone_info().minutes == 5);
 
@@ -985,6 +1113,7 @@ TEST_CASE("Core Date: increment to not leap feb month", "[core_date]")
     REQUIRE(d.time().hour == 10);
     REQUIRE(d.time().minutes == 10);
     REQUIRE(d.time().seconds == 10);
+    REQUIRE(d.time().millis == 0);
     REQUIRE(d.zone_info().hours == -5);
     REQUIRE(d.zone_info().minutes == 5);
 }

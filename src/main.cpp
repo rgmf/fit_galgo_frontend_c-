@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 
-#include "ui/shell.h"
+//#include "ui/shell.h"
 
 /**
  * @return Message with information and help about programm usage.
@@ -24,6 +24,7 @@ int main(int argc, char* argv[])
     ushort portInt;
     std::string* ptr_to_option = nullptr;
 
+    /*
     std::for_each(argv + 1, argv + argc, [&ptr_to_option, &host, &port](char* arg)
     {
 	if (strcmp(arg, "-h") == 0)
@@ -67,6 +68,6 @@ int main(int argc, char* argv[])
 
     fitgalgo::Shell shell{host, portInt};
     shell.loop();
-
+     */
     return 0;
 }

@@ -11,16 +11,11 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 
 set(SOURCES
-  src/core/date.cpp
-
-  
   src/main.cpp
   src/core/api.cpp
-  src/core/stats.cpp
-  src/ui/shell.cpp
-  src/ui/calendar.cpp
-  src/ui/repr.cpp
-  src/ui/colors.cpp)
+  src/core/date.cpp
+  src/core/monitor.cpp
+)
 
 include_directories(include)
 
@@ -28,7 +23,11 @@ add_executable(fitgalgo ${SOURCES})
 
 set(TEST_SOURCES
   test/test_core_date.cpp
-  src/core/date.cpp)
+  test/test_monitor.cpp
+
+  src/core/api.cpp
+  src/core/date.cpp
+  src/core/monitor.cpp)
 
 find_package(Catch2 3 REQUIRED)
 # These tests can use the Catch2-provided main

@@ -18,8 +18,7 @@ private:
     inline void activities() const;
 
 public:
-    explicit Shell(const std::string& host, const ushort& port)
-	: connection(host, port) {}
+    explicit Shell() : connection{} {}
     void loop();
 };
 
@@ -62,7 +61,7 @@ private:
     void year_stats() const override;
     void month_stats() const override;
     void item_by_item_stats() const override;
-    
+
 public:
     explicit ShellSleep(const SleepData& sleep_data);
 };

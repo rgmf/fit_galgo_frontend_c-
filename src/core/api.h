@@ -15,6 +15,13 @@
 namespace fitgalgo
 {
 
+//constexpr const char *HOST = "localhost:8000";
+constexpr const char *HOST = "https://fitapi.rgmf.es";
+
+constexpr const time_t CONNECTION_TIMEOUT_SECONDS = 60;
+constexpr const time_t READ_TIMEOUT_SECONDS = 300;
+constexpr const time_t WRITE_TIMEOUT_SECONDS = 300;
+
 struct Data
 {
     virtual ~Data() = default;
@@ -166,7 +173,7 @@ struct Activity
     std::optional<std::pair<float, float>> start_lat_lon{};
     std::optional<std::pair<float, float>> end_lat_lon{};
     std::string start_time_utc{};
-    std::optional<float> total_elapsed_time{}; 
+    std::optional<float> total_elapsed_time{};
     std::optional<float> total_timer_time{};
     std::optional<float> total_work_time{};
     std::optional<float> total_distance{};
@@ -420,23 +427,18 @@ public:
 class Connection
 {
 private:
-    std::string host;
-    int port;
-    std::string token{};
+    std::string token;
 
     const Result<UploadedFileData> do_post_for_file(
 	httplib::Client& client, const std::filesystem::path& file_path) const;
 
 public:
-    explicit Connection(const std::string host, const int port)
-	: host(host), port(port) {}
-    Connection(const Connection& other) : host{other.host}, port{other.port}, token{other.token} {}
-    const Result<LoginData> login(
-	const std::string& username, const std::string& password);
+    explicit Connection() : token{} {}
+    Connection(const Connection& other) : token{other.token} {}
+    const Result<LoginData> login(const std::string& username, const std::string& password);
     void logout();
     bool has_token() const;
-    const std::vector<Result<UploadedFileData>> post_file(
-	std::filesystem::path& path) const;
+    const std::vector<Result<UploadedFileData>> post_file(std::filesystem::path& path) const;
     const Result<StepsData> get_steps() const;
     const Result<SleepData> get_sleep() const;
     const Result<ActivitiesData> get_activities() const;

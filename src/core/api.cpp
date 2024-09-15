@@ -1,4 +1,5 @@
 #include "api.h"
+#include "httplib/httplib.h"
 #include <memory>
 
 namespace fitgalgo
@@ -116,7 +117,7 @@ bool UploadedFileData::load(const rapidjson::Document& document)
     }
 
     std::vector<UploadedFile> files{};
-    
+
     for (const auto& v : data->value.GetArray())
     {
 	if (v.IsObject())
@@ -287,7 +288,7 @@ bool SleepData::load(const rapidjson::Document& document)
 
 		if (itr_sqs != itr_assessment->value.MemberEnd() && itr_sqs->value.IsInt())
 		    assessment.sleep_quality_score = itr_sqs->value.GetInt();
-		
+
 		if (itr_srs != itr_assessment->value.MemberEnd() && itr_srs->value.IsInt())
 		    assessment.sleep_recovery_score = itr_srs->value.GetInt();
 
@@ -330,7 +331,7 @@ bool SleepData::load(const rapidjson::Document& document)
 			levels.emplace_back(level);
 		    }
 		}
-		
+
 		sleep_item.levels = levels;
 	    }
 
@@ -545,7 +546,7 @@ ActivitiesData& ActivitiesData::operator=(const ActivitiesData& other)
     if (this != &other)
     {
 	activities.clear();
-	
+
 	for (const auto& [idx, a] : other.activities)
 	{
 	    switch (a->get_id())
@@ -599,7 +600,7 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 		    if (s.IsObject())
 		    {
 			Split split{};
-			
+
 			auto itr_st = s.FindMember("split_type");
 			auto itr_tet = s.FindMember("total_elapsed_time");
 			auto itr_ttt = s.FindMember("total_timer_time");
@@ -610,7 +611,7 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 			auto itr_d = s.FindMember("difficulty");
 			auto itr_r = s.FindMember("result");
 			auto itr_di = s.FindMember("discarded");
-			
+
 			if (itr_st != s.MemberEnd() && itr_st->value.IsString())
 			    split.split_type = itr_st->value.GetString();
 			if (itr_tet != s.MemberEnd() && itr_tet->value.IsFloat())
@@ -629,9 +630,9 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 			    split.result = SplitResult::DISCARDED;
 			if (itr_r != s.MemberEnd() && itr_r->value.IsInt())
 			{
-			    if (itr_r->value.GetInt() == 2) 
+			    if (itr_r->value.GetInt() == 2)
 				split.result = SplitResult::ATTEMPTED;
-			    else if (itr_r->value.GetInt() == 3) 
+			    else if (itr_r->value.GetInt() == 3)
 				split.result = SplitResult::COMPLETED;
 			}
 			if (itr_ttt != s.MemberEnd() && itr_ttt->value.IsFloat())
@@ -782,7 +783,7 @@ bool ActivitiesData::load(const rapidjson::Document& document)
 
 		if (itr_spn != itr_session->value.MemberEnd() && itr_spn->value.IsString())
 		    activity->sport_profile_name = itr_spn->value.GetString();
-		
+
 		if (itr_s != itr_session->value.MemberEnd() && itr_s->value.IsString())
 		    activity->sport = itr_s->value.GetString();
 
@@ -907,7 +908,7 @@ std::string Error::error_to_string() const
         {ErrorType::Http100, "Error: 1xx code error."},
         {ErrorType::Http300, "Error: 3xx code error."},
         {ErrorType::Http400, "Error: 4xx code error."},
-	{ErrorType::Http401, "Error: authentication error."},
+        {ErrorType::Http401, "Error: authentication error."},
         {ErrorType::Http500, "Error: 5xx code error."}
     };
 
@@ -916,18 +917,18 @@ std::string Error::error_to_string() const
     auto errorString = errorMessages.find(error);
     if (errorString != errorMessages.end())
     {
-	result = errorString->second;
+        result = errorString->second;
     }
 
     if (httplib_error != httplib::Error::Success)
     {
-	result += '\n';
-	result += httplib::to_string(httplib_error);
+        result += '\n';
+        result += httplib::to_string(httplib_error);
     }
 
     if (result.empty())
     {
-	return "Error: Unknown error.";
+        return "Error: Unknown error.";
     }
 
     return result;
@@ -983,43 +984,43 @@ Result<T>& Result<T>::operator=(const Result<T>&& other) noexcept
 
 template <typename T>
 void Result<T>::load(const httplib::Result &response)
-{   
+{
     if (!response)
     {
-	this->error = Error(ErrorType::NotResponse);
-	return;
+    	this->error = Error(ErrorType::NotResponse);
+    	return;
     }
 
     this->status = response->status;
 
     if (response->status < 200)
     {
-	this->error = Error(ErrorType::Http100, response.error());
-	return;
+    	this->error = Error(ErrorType::Http100, response.error());
+    	return;
     }
 
     if (response->status >= 300 && response->status < 400)
     {
-	this->error = Error(ErrorType::Http300, response.error());
-	return;
+    	this->error = Error(ErrorType::Http300, response.error());
+    	return;
     }
 
     if (response->status == 401)
     {
-	this->error = Error(ErrorType::Http401, response.error());
-	return;
+    	this->error = Error(ErrorType::Http401, response.error());
+    	return;
     }
 
     if (response->status > 401 && response->status < 500)
     {
-	this->error = Error(ErrorType::Http400, response.error());
-	return;
+    	this->error = Error(ErrorType::Http400, response.error());
+    	return;
     }
 
     if (response->status >= 500)
     {
-	this->error = Error(ErrorType::Http500, response.error());
-	return;
+    	this->error = Error(ErrorType::Http500, response.error());
+    	return;
     }
 
     rapidjson::Document document;
@@ -1028,9 +1029,9 @@ void Result<T>::load(const httplib::Result &response)
     bool is_valid = this->data->load(document);
 
     if (is_valid)
-	this->error = Error(ErrorType::Success, response.error());
+        this->error = Error(ErrorType::Success, response.error());
     else
-	this->error = Error(ErrorType::NotData, response.error());
+        this->error = Error(ErrorType::NotData, response.error());
 }
 
 template <typename T>
@@ -1039,22 +1040,28 @@ void Result<T>::load(const T& newData)
     this->data = std::make_unique<T>(newData);
 }
 
-const Result<LoginData> Connection::login(
-    const std::string& username, const std::string& password)
+const Result<LoginData> Connection::login(const std::string& username, const std::string& password)
 {
-    httplib::Client client(this->host, this->port);
+    //httplib::Client client(this->host, this->port);
+    httplib::Client client(HOST);
+    //httplib::SSLClient client("fitapi.rgmf.es");
     std::stringstream credentials;
     rapidjson::Document document;
 
     credentials << "username=" << username << "&password=" << password;
-    auto response = client.Post(
-	"/auth/login", credentials.str(), "application/x-www-form-urlencoded");
+    auto response = client.Post("/auth/login/", credentials.str(), "application/x-www-form-urlencoded");
+
+    //httplib::Params credentials;
+    //credentials.emplace("username", username.c_str());
+    //credentials.emplace("password", password.c_str());
+
+    //auto response = client.Post("/auth/login", credentials);
 
     Result<LoginData> result{};
     result.load(response);
 
     if (result.is_valid())
-	this->token = result.get_data().access_token;
+        this->token = result.get_data().access_token;
 
     return result;
 }
@@ -1068,63 +1075,62 @@ const Result<UploadedFileData> Connection::do_post_for_file(
 {
     try
     {
-	// Open and read the file in a buffer.
-	std::ifstream file(path.string(), std::ios::binary);
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	file.close();
+        // Open and read the file in a buffer.
+        std::ifstream file(path.string(), std::ios::binary);
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        file.close();
 
-	// Send POST request with the file.
-	httplib::MultipartFormDataItems items = {
-	    { "files", buffer.str(), path.filename().string(), "application/octet-stream" },
-	    { "zone", "Europe/Madrid", "", "" }
-	};
+        // Send POST request with the file.
+        httplib::MultipartFormDataItems items = {
+            { "files", buffer.str(), path.filename().string(), "application/octet-stream" },
+            { "zone", "Europe/Madrid", "", "" }
+        };
 
-	auto response = client.Post("/files/", items);
-	Result<UploadedFileData> result;
-	result.load(response);
-	return result;
+        auto response = client.Post("/files/", items);
+        Result<UploadedFileData> result;
+        result.load(response);
+        return result;
     }
     catch (const std::exception& e)
     {
-	UploadedFile uf;
-	uf.filename = path.string();
-	uf.accepted = false;
-	UploadedFileData ufd;
-	ufd.uploaded_files.emplace_back(uf);
-	ufd.errors = {e.what()};
+        UploadedFile uf;
+        uf.filename = path.string();
+        uf.accepted = false;
+        UploadedFileData ufd;
+        ufd.uploaded_files.emplace_back(uf);
+        ufd.errors = {e.what()};
 
         Result<UploadedFileData> result;
-	result.load(ufd);
+        result.load(ufd);
 
-	return result;
+        return result;
     }
 }
 
-const std::vector<Result<UploadedFileData>> Connection::post_file(
-    std::filesystem::path& path) const
+const std::vector<Result<UploadedFileData>> Connection::post_file(std::filesystem::path& path) const
 {
     std::vector<Result<UploadedFileData>> results;
 
-    httplib::Client client(this->host, this->port);
+    httplib::Client client(HOST);
     client.set_bearer_token_auth(this->token);
-    client.set_connection_timeout(0, 1000000); // 1000 milliseconds = 1 second
-    client.set_read_timeout(10, 0); // 10 seconds
-    client.set_write_timeout(10, 0); // 10 seconds
+    client.set_connection_timeout(CONNECTION_TIMEOUT_SECONDS, 0);
+    client.set_read_timeout(READ_TIMEOUT_SECONDS, 0);
+    client.set_write_timeout(WRITE_TIMEOUT_SECONDS, 0);
 
     if (std::filesystem::is_regular_file(path))
     {
-	auto result = this->do_post_for_file(client, path);
-	results.emplace_back(std::move(result));
+        auto result = this->do_post_for_file(client, path);
+        results.emplace_back(std::move(result));
     }
     else if (std::filesystem::is_directory(path))
     {
-	for (const auto& e : std::filesystem::directory_iterator(path))
-	{
-	    auto p = e.path();
-	    auto result = this->do_post_for_file(client, p);
-	    results.emplace_back(std::move(result));
-	}
+        for (const auto& e : std::filesystem::directory_iterator(path))
+        {
+            auto p = e.path();
+            auto result = this->do_post_for_file(client, p);
+            results.emplace_back(std::move(result));
+        }
     }
 
     return results;
@@ -1132,10 +1138,13 @@ const std::vector<Result<UploadedFileData>> Connection::post_file(
 
 const Result<StepsData> Connection::get_steps() const
 {
-    httplib::Client client(this->host, this->port);
+    httplib::Client client(HOST);
     client.set_bearer_token_auth(this->token);
-    auto response = client.Get("/monitorings/steps");
-    
+    client.set_connection_timeout(CONNECTION_TIMEOUT_SECONDS, 0);
+    client.set_read_timeout(READ_TIMEOUT_SECONDS, 0);
+    client.set_write_timeout(WRITE_TIMEOUT_SECONDS, 0);
+    auto response = client.Get("/monitorings/steps/");
+
     Result<StepsData> result;
     result.load(response);
     return result;
@@ -1143,10 +1152,13 @@ const Result<StepsData> Connection::get_steps() const
 
 const Result<SleepData> Connection::get_sleep() const
 {
-    httplib::Client client(this->host, this->port);
+    httplib::Client client(HOST);
     client.set_bearer_token_auth(this->token);
-    auto response = client.Get("/monitorings/sleep");
-    
+    client.set_connection_timeout(CONNECTION_TIMEOUT_SECONDS, 0);
+    client.set_read_timeout(READ_TIMEOUT_SECONDS, 0);
+    client.set_write_timeout(WRITE_TIMEOUT_SECONDS, 0);
+    auto response = client.Get("/monitorings/sleep/");
+
     Result<SleepData> result;
     result.load(response);
     return result;
@@ -1154,8 +1166,11 @@ const Result<SleepData> Connection::get_sleep() const
 
 const Result<ActivitiesData> Connection::get_activities() const
 {
-    httplib::Client client(this->host, this->port);
+    httplib::Client client(HOST);
     client.set_bearer_token_auth(this->token);
+    client.set_connection_timeout(CONNECTION_TIMEOUT_SECONDS, 0);
+    client.set_read_timeout(READ_TIMEOUT_SECONDS, 0);
+    client.set_write_timeout(WRITE_TIMEOUT_SECONDS, 0);
     auto response = client.Get("/activities/");
 
     Result<ActivitiesData> result;
@@ -1165,8 +1180,11 @@ const Result<ActivitiesData> Connection::get_activities() const
 
 const Result<LapsData> Connection::get_activity_laps(const std::string& activity_id) const
 {
-    httplib::Client client(this->host, this->port);
+    httplib::Client client(HOST);
     client.set_bearer_token_auth(this->token);
+    client.set_connection_timeout(CONNECTION_TIMEOUT_SECONDS, 0);
+    client.set_read_timeout(READ_TIMEOUT_SECONDS, 0);
+    client.set_write_timeout(WRITE_TIMEOUT_SECONDS, 0);
     auto response = client.Get("/activities/" + activity_id + "/laps/");
 
     Result<LapsData> result;

@@ -52,7 +52,7 @@ inline bool Shell::login()
     Result<LoginData> login_result;
     std::string username;
     std::string password;
- 
+
     system("clear");
     cout << "You need to login to Fit Galgo API" << endl;
     cout << endl << "Username: ";
@@ -66,14 +66,14 @@ inline bool Shell::login()
     login_result = this->connection.login(username, password);
     if (login_result.is_valid())
     {
-	cout << "Login okay" << endl;
-	return true;
+    	cout << "Login okay" << endl;
+    	return true;
     }
     else
     {
-	std::cerr << "Login error" << endl;
-	std::cerr << login_result.get_error().error_to_string() << endl;
-	return false;
+    	std::cerr << "Login error" << endl;
+    	std::cerr << login_result.get_error().error_to_string() << endl;
+    	return false;
     }
 }
 
@@ -405,7 +405,7 @@ void ShellStats::loop()
 		year = new_year > 0 ? new_year : year;
 		action = {};
 	    }
-	}	
+	}
     } while (c != 'q');
 }
 

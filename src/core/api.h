@@ -15,8 +15,8 @@
 namespace fitgalgo
 {
 
-//constexpr const char *HOST = "localhost:8000";
-constexpr const char *HOST = "https://fitapi.rgmf.es";
+constexpr const char *HOST = "localhost:8000";
+//constexpr const char *HOST = "https://fitapi.rgmf.es";
 
 constexpr const time_t CONNECTION_TIMEOUT_SECONDS = 60;
 constexpr const time_t READ_TIMEOUT_SECONDS = 300;
@@ -438,7 +438,7 @@ public:
     const Result<LoginData> login(const std::string& username, const std::string& password);
     void logout();
     bool has_token() const;
-    const std::vector<Result<UploadedFileData>> post_file(std::filesystem::path& path) const;
+    const std::vector<Result<UploadedFileData>> post_file(const std::filesystem::path& path) const;
     const Result<StepsData> get_steps() const;
     const Result<SleepData> get_sleep() const;
     const Result<ActivitiesData> get_activities() const;

@@ -1,26 +1,50 @@
 [
 {
-  "directory": "/home/roman/workspace/fit_galgo_frontend_c++/build",
-  "command": "/usr/bin/c++  -I/home/roman/workspace/fit_galgo_frontend_c++/include -Wall -Wextra -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/main.cpp.o -c /home/roman/workspace/fit_galgo_frontend_c++/src/main.cpp",
-  "file": "/home/roman/workspace/fit_galgo_frontend_c++/src/main.cpp",
+  "directory": "/home/roman/workspace/fit_galgo_frontend_cpp/build",
+  "command": "/usr/bin/c++ -DCPPHTTPLIB_OPENSSL_SUPPORT -I/home/roman/workspace/fit_galgo_frontend_cpp/include -Wall -Wextra -Wpedantic -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/main.cpp.o -c /home/roman/workspace/fit_galgo_frontend_cpp/src/main.cpp",
+  "file": "/home/roman/workspace/fit_galgo_frontend_cpp/src/main.cpp",
   "output": "CMakeFiles/fitgalgo.dir/src/main.cpp.o"
 },
 {
-  "directory": "/home/roman/workspace/fit_galgo_frontend_c++/build",
-  "command": "/usr/bin/c++  -I/home/roman/workspace/fit_galgo_frontend_c++/include -Wall -Wextra -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/core/api.cpp.o -c /home/roman/workspace/fit_galgo_frontend_c++/src/core/api.cpp",
-  "file": "/home/roman/workspace/fit_galgo_frontend_c++/src/core/api.cpp",
+  "directory": "/home/roman/workspace/fit_galgo_frontend_cpp/build",
+  "command": "/usr/bin/c++ -DCPPHTTPLIB_OPENSSL_SUPPORT -I/home/roman/workspace/fit_galgo_frontend_cpp/include -Wall -Wextra -Wpedantic -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/core/api.cpp.o -c /home/roman/workspace/fit_galgo_frontend_cpp/src/core/api.cpp",
+  "file": "/home/roman/workspace/fit_galgo_frontend_cpp/src/core/api.cpp",
   "output": "CMakeFiles/fitgalgo.dir/src/core/api.cpp.o"
 },
 {
-  "directory": "/home/roman/workspace/fit_galgo_frontend_c++/build",
-  "command": "/usr/bin/c++  -I/home/roman/workspace/fit_galgo_frontend_c++/include -Wall -Wextra -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/core/stats.cpp.o -c /home/roman/workspace/fit_galgo_frontend_c++/src/core/stats.cpp",
-  "file": "/home/roman/workspace/fit_galgo_frontend_c++/src/core/stats.cpp",
+  "directory": "/home/roman/workspace/fit_galgo_frontend_cpp/build",
+  "command": "/usr/bin/c++ -DCPPHTTPLIB_OPENSSL_SUPPORT -I/home/roman/workspace/fit_galgo_frontend_cpp/include -Wall -Wextra -Wpedantic -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/core/stats.cpp.o -c /home/roman/workspace/fit_galgo_frontend_cpp/src/core/stats.cpp",
+  "file": "/home/roman/workspace/fit_galgo_frontend_cpp/src/core/stats.cpp",
   "output": "CMakeFiles/fitgalgo.dir/src/core/stats.cpp.o"
 },
 {
-  "directory": "/home/roman/workspace/fit_galgo_frontend_c++/build",
-  "command": "/usr/bin/c++  -I/home/roman/workspace/fit_galgo_frontend_c++/include -Wall -Wextra -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/ui/shell.cpp.o -c /home/roman/workspace/fit_galgo_frontend_c++/src/ui/shell.cpp",
-  "file": "/home/roman/workspace/fit_galgo_frontend_c++/src/ui/shell.cpp",
+  "directory": "/home/roman/workspace/fit_galgo_frontend_cpp/build",
+  "command": "/usr/bin/c++ -DCPPHTTPLIB_OPENSSL_SUPPORT -I/home/roman/workspace/fit_galgo_frontend_cpp/include -Wall -Wextra -Wpedantic -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/ui/shell.cpp.o -c /home/roman/workspace/fit_galgo_frontend_cpp/src/ui/shell.cpp",
+  "file": "/home/roman/workspace/fit_galgo_frontend_cpp/src/ui/shell.cpp",
   "output": "CMakeFiles/fitgalgo.dir/src/ui/shell.cpp.o"
+},
+{
+  "directory": "/home/roman/workspace/fit_galgo_frontend_cpp/build",
+  "command": "/usr/bin/c++ -DCPPHTTPLIB_OPENSSL_SUPPORT -I/home/roman/workspace/fit_galgo_frontend_cpp/include -Wall -Wextra -Wpedantic -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/ui/calendar.cpp.o -c /home/roman/workspace/fit_galgo_frontend_cpp/src/ui/calendar.cpp",
+  "file": "/home/roman/workspace/fit_galgo_frontend_cpp/src/ui/calendar.cpp",
+  "output": "CMakeFiles/fitgalgo.dir/src/ui/calendar.cpp.o"
+},
+{
+  "directory": "/home/roman/workspace/fit_galgo_frontend_cpp/build",
+  "command": "/usr/bin/c++ -DCPPHTTPLIB_OPENSSL_SUPPORT -I/home/roman/workspace/fit_galgo_frontend_cpp/include -Wall -Wextra -Wpedantic -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/ui/repr.cpp.o -c /home/roman/workspace/fit_galgo_frontend_cpp/src/ui/repr.cpp",
+  "file": "/home/roman/workspace/fit_galgo_frontend_cpp/src/ui/repr.cpp",
+  "output": "CMakeFiles/fitgalgo.dir/src/ui/repr.cpp.o"
+},
+{
+  "directory": "/home/roman/workspace/fit_galgo_frontend_cpp/build",
+  "command": "/usr/bin/c++ -DCPPHTTPLIB_OPENSSL_SUPPORT -I/home/roman/workspace/fit_galgo_frontend_cpp/include -Wall -Wextra -Wpedantic -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/ui/colors.cpp.o -c /home/roman/workspace/fit_galgo_frontend_cpp/src/ui/colors.cpp",
+  "file": "/home/roman/workspace/fit_galgo_frontend_cpp/src/ui/colors.cpp",
+  "output": "CMakeFiles/fitgalgo.dir/src/ui/colors.cpp.o"
+},
+{
+  "directory": "/home/roman/workspace/fit_galgo_frontend_cpp/build",
+  "command": "/usr/bin/c++ -DCPPHTTPLIB_OPENSSL_SUPPORT -I/home/roman/workspace/fit_galgo_frontend_cpp/include -Wall -Wextra -Wpedantic -g -O0 -std=gnu++20 -o CMakeFiles/fitgalgo.dir/src/cli/auto_importer.cpp.o -c /home/roman/workspace/fit_galgo_frontend_cpp/src/cli/auto_importer.cpp",
+  "file": "/home/roman/workspace/fit_galgo_frontend_cpp/src/cli/auto_importer.cpp",
+  "output": "CMakeFiles/fitgalgo.dir/src/cli/auto_importer.cpp.o"
 }
 ]

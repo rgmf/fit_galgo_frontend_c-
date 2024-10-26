@@ -82,51 +82,49 @@ inline void Shell::upload_path() const
     system("clear");
     try
     {
-	std::filesystem::path path;
-	do
-	{
-	    cout << endl << "File path: ";
-	    std::cin >> path;
-	    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	} while (!std::filesystem::exists(path));
+        std::filesystem::path path;
+        do
+        {
+            cout << endl << "File path: ";
+            std::cin >> path;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        } while (!std::filesystem::exists(path));
 
-	auto results = this->connection.post_file(path);
-	unsigned short total = 0;
-	unsigned short accepted = 0;
-	for (auto& result : results)
-	{
-	    if (result.is_valid())
-	    {
-		const auto& ufd = result.get_data();
-		for (const auto& uf : ufd.uploaded_files)
-		{
-		    total++;
-		    cout << "File: " << uf.filename
-			    << " | accepted: " << uf.accepted
-			    << endl;
-		    if (!uf.errors.empty())
-			cout << "Errors:" << endl;
-		    else
-			accepted++;
+        auto results = this->connection.post_file(path);
+        unsigned short total = 0;
+        unsigned short accepted = 0;
+        for (auto& result : results)
+        {
+            if (result.is_valid())
+            {
+                const auto& ufd = result.get_data();
+                for (const auto& uf : ufd.uploaded_files)
+                {
+                    total++;
+                    cout << "File: " << uf.filename << " | accepted: " << uf.accepted << endl;
+                    if (!uf.errors.empty())
+                        cout << "Errors:" << endl;
+                    else
+                        accepted++;
 
-		    for (auto& error : uf.errors)
-		    {
-			cout << error << endl;
-		    }
-		}
-	    }
-	    else
-	    {
-		std::cerr << result.get_error().error_to_string() << endl;
-	    }
-	}
-	cout << endl << "TOTAL: " << total << endl;
-	cout << "ACCEPTED: " << accepted << endl << endl;
+                    for (auto& error : uf.errors)
+                    {
+                        cout << error << endl;
+                    }
+                }
+            }
+            else
+            {
+            std::cerr << result.get_error().error_to_string() << endl;
+            }
+        }
+        cout << endl << "TOTAL: " << total << endl;
+        cout << "ACCEPTED: " << accepted << endl << endl;
     }
     catch (std::filesystem::filesystem_error& error)
     {
-	std::cerr << "EXCEPTION: " << error.what() << endl;
-	cout << "Try again..." << endl;
+        std::cerr << "EXCEPTION: " << error.what() << endl;
+        cout << "Try again..." << endl;
     }
 
     cout << endl << "Press Enter to continue...";

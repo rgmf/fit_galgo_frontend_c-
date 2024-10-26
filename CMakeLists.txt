@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 3.27)
 project(FitGalgoFrontendC++)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(CMAKE_CXX_STANDARD 20)
 
 find_package(OpenSSL REQUIRED)
+find_package(SQLite3 REQUIRED)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
@@ -20,6 +23,7 @@ set(SOURCES
     src/ui/calendar.cpp
     src/ui/repr.cpp
     src/ui/colors.cpp
+    src/cli/auto_importer.cpp
 )
 
 include_directories(
@@ -32,4 +36,9 @@ add_definitions(-DCPPHTTPLIB_OPENSSL_SUPPORT)
 add_executable(fitgalgo ${SOURCES})
 
 #target_link_libraries(fitgalgo PUBLIC ${OPENSSL_LIBRARIES})
-target_link_libraries(fitgalgo OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(
+    fitgalgo
+    OpenSSL::SSL
+    OpenSSL::Crypto
+    SQLite::SQLite3
+)

@@ -1108,7 +1108,7 @@ const Result<UploadedFileData> Connection::do_post_for_file(
     }
 }
 
-const std::vector<Result<UploadedFileData>> Connection::post_file(std::filesystem::path& path) const
+const std::vector<Result<UploadedFileData>> Connection::post_file(const std::filesystem::path& path) const
 {
     std::vector<Result<UploadedFileData>> results;
 

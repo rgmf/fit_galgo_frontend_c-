@@ -13,9 +13,10 @@ std::optional<std::filesystem::path> get_path(const char *pathString)
 int main(int argc, char **argv)
 {
     std::optional<std::filesystem::path> filepath;
-    if (argc > 2 && strcmp(argv[1], "-d") == 0 && (filepath = get_path(argv[2])).has_value())
+    if (argc > 6 && strcmp(argv[1], "-d") == 0 && (filepath = get_path(argv[2])).has_value() &&
+        strcmp(argv[3], "-v") == 0 && strcmp(argv[5], "-p") == 0)
     {
-        fitgalgo::AutoImporter auto_importer{*filepath};
+        fitgalgo::AutoImporter auto_importer{*filepath, std::string{argv[4]}, std::string{argv[6]}};
     }
     else
     {

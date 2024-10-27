@@ -1,4 +1,6 @@
 #include "auto_importer.h"
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
 
 namespace  fitgalgo
@@ -44,8 +46,9 @@ inline bool is_valid_device_fit_file(const std::string& filename)
     return true;
 }
 
-AutoImporter::AutoImporter(const std::filesystem::path& path)
-    : connection{}, path{path}, database_path{}
+AutoImporter::AutoImporter(
+    const std::filesystem::path& path, const std::string& vendorId, const std::string& productId)
+    : connection{}, path{path}, database_path{}, vendorId{vendorId}, productId{productId}
 {
     const char *username = std::getenv("FIT_USERNAME");
     const char *password = std::getenv("FIT_PASSWD");
@@ -118,7 +121,11 @@ inline void AutoImporter::start() const
     // Looking for device.fit file
     for (const auto& entry : std::filesystem::recursive_directory_iterator(this->path))
     {
-        if (entry.path().string().ends_with("device.fit"))
+        std::string path_lower = entry.path().string();
+        std::transform(path_lower.begin(), path_lower.end(), path_lower.begin(),
+            [](unsigned char c) { return std::tolower(c); }
+        );
+        if (path_lower.ends_with("device.fit"))
         {
             device_fit_file_path = entry.path().string();
             break;
@@ -163,10 +170,13 @@ inline void AutoImporter::start() const
         {
             std::cout << "POST file: " << entry.path() << std::endl;
 
-            if (!db.exists_absolute_path(entry.path()))
+            const auto& relative_path = std::filesystem::relative(entry.path(), this->path);
+            if (!db.exists_imported_file(relative_path, this->vendorId, this->productId))
             {
                 ImportedFile imported_file{};
-                imported_file.absolutePath = entry.path();
+                imported_file.relativePath = relative_path;
+                imported_file.vendorId = this->vendorId;
+                imported_file.productId = this->productId;
 
                 const auto& results = this->connection.post_file(entry.path());
                 if (results.size() > 0)
@@ -248,10 +258,13 @@ bool ImportedFileDao::create_table_if_not_exists() const
 {
     const char* sql = "CREATE TABLE IF NOT EXISTS imported_files ("
                       "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                      "absolute_path VARCHAR(1024) UNIQUE NOT NULL, "
+                      "relative_path VARCHAR(1024) NOT NULL, "
+                      "vendor_id VARCHAR(100) NOT NULL, "
+                      "product_id VARCHAR(100) NOT NULL, "
                       "accepted INTEGER NOT NULL, "
                       "error TEXT, "
-                      "inserted DATETIME DEFAULT CURRENT_TIMESTAMP);";
+                      "inserted DATETIME DEFAULT CURRENT_TIMESTAMP, "
+                      "UNIQUE (relative_path, vendor_id, product_id));";
     char* error_msg;
     if (sqlite3_exec(db, sql, nullptr, nullptr, &error_msg) != SQLITE_OK)
     {
@@ -265,8 +278,8 @@ bool ImportedFileDao::create_table_if_not_exists() const
 bool ImportedFileDao::save(const ImportedFile& r) const
 {
     const char *sql = "INSERT INTO imported_files "
-                      "(absolute_path, accepted, error) "
-                      "VALUES (?, ?, ?);";
+                      "(relative_path, vendor_id, product_id, accepted, error) "
+                      "VALUES (?, ?, ?, ?, ?);";
     sqlite3_stmt *stmt;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
     {
@@ -274,9 +287,11 @@ bool ImportedFileDao::save(const ImportedFile& r) const
         return false;
     }
 
-    sqlite3_bind_text(stmt, 1, r.absolutePath.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_int(stmt, 2, r.accepted ? 1 : 0);
-    sqlite3_bind_text(stmt, 3, r.error.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 1, r.relativePath.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, r.vendorId.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, r.productId.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 4, r.accepted ? 1 : 0);
+    sqlite3_bind_text(stmt, 5, r.error.c_str(), -1, SQLITE_TRANSIENT);
 
     bool success = sqlite3_step(stmt) == SQLITE_DONE;
     if (!success)
@@ -287,9 +302,11 @@ bool ImportedFileDao::save(const ImportedFile& r) const
     return success;
 }
 
-bool ImportedFileDao::exists_absolute_path(const std::string& p) const
+bool ImportedFileDao::exists_imported_file(
+    const std::string& p, const std::string& vi, const std::string& pi) const
 {
-    const char* sql = "SELECT 1 FROM imported_files WHERE absolute_path=?;";
+    const char* sql = "SELECT 1 FROM imported_files "
+                      "WHERE relative_path=? AND vendor_id=? AND product_id=?;";
     sqlite3_stmt* stmt;
 
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
@@ -299,6 +316,8 @@ bool ImportedFileDao::exists_absolute_path(const std::string& p) const
     }
 
     sqlite3_bind_text(stmt, 1, p.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, vi.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, pi.c_str(), -1, SQLITE_STATIC);
 
     bool found = sqlite3_step(stmt) == SQLITE_ROW;
     sqlite3_finalize(stmt);

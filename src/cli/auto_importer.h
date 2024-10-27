@@ -16,16 +16,21 @@ private:
     Connection connection;
     std::filesystem::path path;
     std::filesystem::path database_path;
+    std::string vendorId;
+    std::string productId;
 
     inline void start() const;
 
 public:
-    explicit AutoImporter(const std::filesystem::path& path);
+    explicit AutoImporter(
+        const std::filesystem::path& path, const std::string& vendorId, const std::string& productId);
 };
 
 struct ImportedFile
 {
-    std::string absolutePath{};
+    std::string relativePath{};
+    std::string vendorId{};
+    std::string productId{};
     bool accepted{};
     std::string error{};
 };
@@ -42,7 +47,7 @@ public:
     bool is_ok() const;
     bool create_table_if_not_exists() const;
     bool save(const ImportedFile& r) const;
-    bool exists_absolute_path(const std::string& p) const;
+    bool exists_imported_file(const std::string& p, const std::string& vi, const std::string& pi) const;
 };
 
 }
